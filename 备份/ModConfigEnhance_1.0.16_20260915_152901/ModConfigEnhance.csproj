@@ -1,0 +1,83 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Remove="备份\**\*.cs;验证\**\*.cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <AssemblyName>ModConfigEnhance</AssemblyName>
+    <RootNamespace>ModConfigEnhance</RootNamespace>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Version>1.0.16</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>12.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <GameDir>F:\Games\SteamLibrary\steamapps\common\PEAK\</GameDir>
+    <ManagedDir>$(GameDir)PEAK_Data\Managed\</ManagedDir>
+    <BepInExCoreDir>$(GameDir)BepInEx\core\</BepInExCoreDir>
+    <PluginsDir>$(GameDir)BepInEx\plugins\</PluginsDir>
+    <!-- 输出目录：独立文件夹，便于随时整包移除。新整合包把它放在 plugins 顶层 -->
+    <DeployDir>$(PluginsDir)[界面]ModConfig增强-ModConfigEnhance\</DeployDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 游戏本体程序集全量引用并 publicize -->
+    <LocalReferences Include="$(ManagedDir)*.dll"
+                     Exclude="$(ManagedDir)System*.dll;$(ManagedDir)mscorlib.dll;$(ManagedDir)netstandard.dll" />
+    <Reference Include="@(LocalReferences)" Private="false" Publicize="true" />
+
+    <!-- PEAKLib.UI 用公开 API；ModConfig 做 publicize 以访问 ModSettingsMenu 等 internal 成员。
+         ModConfig 是硬依赖（BepInDependency），XUnity / TimeTheme 全反射、不引用 DLL。
+         引用三层兜底：$(PluginsDir) 现用整合包扁平布局 → BepInEx3 扁平布局 → BepInEx 分区布局。 -->
+    <Reference Include="PEAKLib.Core">
+      <HintPath Condition="Exists('$(PluginsDir)PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll')">$(PluginsDir)PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll</HintPath>
+      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll') And Exists('$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll')">$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll</HintPath>
+      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll') And !Exists('$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll')">$(GameDir)BepInEx\plugins\0核心&amp;基础模组\[0依赖]Mods\PEAKModding-PEAKLib_Core\plugins\com.github.PEAKModding.PEAKLib.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="PEAKLib.UI">
+      <HintPath Condition="Exists('$(PluginsDir)PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll')">$(PluginsDir)PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll</HintPath>
+      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll') And Exists('$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll')">$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll</HintPath>
+      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll') And !Exists('$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll')">$(GameDir)BepInEx\plugins\0核心&amp;基础模组\[0依赖]Mods\PEAKModding-PEAKLib_UI-1.7.0\com.github.PEAKModding.PEAKLib.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="PEAKLib.ModConfig" Publicize="true">
+      <HintPath Condition="Exists('$(PluginsDir)PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll')">$(PluginsDir)PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll</HintPath>
+      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll') And Exists('$(GameDir)BepInEx3\plugins\PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll')">$(GameDir)BepInEx3\plugins\PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll</HintPath>
+      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll') And !Exists('$(GameDir)BepInEx3\plugins\PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll')">$(GameDir)BepInEx\plugins\0核心&amp;基础模组\[功能]游戏内更改mod配置-ModConfig-1.8.1\com.github.PEAKModding.PEAKLib.ModConfig.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCoreDir)0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExCoreDir)BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="Deploy" AfterTargets="PostBuildEvent" Condition="'$(EnableDeployment)' != 'false'">
+    <MakeDir Directories="$(DeployDir)" />
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFolder="$(DeployDir)"
+          OverwriteReadOnlyFiles="true" />
+    <Copy SourceFiles="$(ProjectDir)README.md;$(ProjectDir)CHANGELOG.md"
+          DestinationFolder="$(DeployDir)"
+          OverwriteReadOnlyFiles="true"
+          Condition="Exists('$(ProjectDir)README.md')" />
+    <Copy SourceFiles="$(ProjectDir)manifest.json"
+          DestinationFolder="$(DeployDir)"
+          OverwriteReadOnlyFiles="true"
+          Condition="Exists('$(ProjectDir)manifest.json')" />
+  </Target>
+</Project>

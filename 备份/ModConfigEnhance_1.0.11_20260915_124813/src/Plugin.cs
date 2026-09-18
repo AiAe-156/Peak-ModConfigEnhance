@@ -1,0 +1,257 @@
+#nullable enable
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using BepInEx;
+using BepInEx.Bootstrap;
+using BepInEx.Configuration;
+using BepInEx.Logging;
+using HarmonyLib;
+
+namespace ModConfigEnhance;
+
+/// <summary>
+/// ModConfig Enhance —— 给 PEAKLib.ModConfig 的模组设置页加：树形侧栏、选项说明面板、界面本地化（语言文件可选）、
+/// 翻译导出 / 查漏翻 / XUnity 联动。原是 LocalFix 第 9 分区，1.0.0 起独立（LocalFix 2.17.0 已移除该分区）。
+/// </summary>
+[BepInPlugin(PluginGuid, PluginName, PluginVersion)]
+[BepInDependency(ModConfigSupport.Guid, BepInDependency.DependencyFlags.HardDependency)]
+[BepInDependency(TimeThemeBridge.Guid, BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(XUnityBridge.Guid, BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(LocalFixGuid, BepInDependency.DependencyFlags.SoftDependency)]
+public class Plugin : BaseUnityPlugin
+{
+    public const string PluginGuid = "com.aiae.modconfigenhance";
+    public const string PluginName = "ModConfig Enhance";
+    public const string PluginVersion = "1.0.11";
+
+    /// <summary>2.17.0 之前的 LocalFix 自带同一套补丁，两边同时挂会把页面建两遍。</summary>
+    internal const string LocalFixGuid = "com.aiae.localfix";
+    private static readonly Version LocalFixSplitVersion = new Version(2, 17, 0);
+
+    internal static ManualLogSource Log { get; private set; } = null!;
+
+    // cfg 说明原文（Loc.ConfigTerms 用同一份字符串做译文的键）
+    internal const string DescTreeSidebar = "Turn the mod settings page into a tree: a vertical mod list on the left, the selected mod's sections expanded under it, options on the right. Layout only, ModConfig's data is untouched. Restart to apply.";
+    internal const string DescDescriptionPanel = "A panel at the top right shows the hovered option's description from its cfg plus its default / range / choices. Needs the tree sidebar. Restart to apply.";
+    internal const string DescUiLocalization = "Translate ModConfig's own UI texts (Search, Default, Clear, filter names …) and this mod's buttons and notices. Texts come from language files in config\\ModConfigEnhance\\language\\, selectable in the third toolbar row. Restart to apply.";
+    internal const string DescTranslationTools = "Toolbar rows in the left column: Export texts / Untranslated / Selected only; Show original / Reload texts / Open folder. Exports go to config\\ModConfigEnhance\\export\\. Untranslated, Show original and Reload need XUnity AutoTranslator. Restart to apply.";
+    internal const string DescLanguageRowOnly = "Keep only the language row (language dropdown + Refresh) in the toolbar above the mod list: the Export texts / Untranslated / Selected only row and the Show original / Reload texts / Open folder row are hidden and the list moves up to fill the space. The Export column is hidden while this is on; its tick state is remembered. Has no effect while \"Translation tools\" is off. Restart to apply.";
+    internal const string DescSwitchXUnity = "When a language file is picked (or the game language changes while following it), switch XUnity AutoTranslator to that language at once: its target language and dictionary folder become Translation\\<code>\\Text\\, the file's translations (everything except MCE_ keys) are written there as ModConfigEnhance_<code>.txt, dictionaries are reloaded and Language= in AutoTranslatorConfig.ini is updated for the next start. Texts without a translation revert to the original. Off = never touch XUnity.";
+    internal const string DescTameXUnity = "When XUnity AutoTranslator is present, empty Endpoint / FallbackEndpoint in AutoTranslatorConfig.ini at startup and unselect the live translator, so it stays dictionary-only. Its factory default GoogleTranslateV2 machine-translates every UI text — that is where weird machine-translated menus come from. Mirrors and manual dictionaries still apply. Turn off if you actually want live machine translation.";
+
+    internal static ConfigEntry<bool> EnableTreeLayout = null!;
+    internal static ConfigEntry<bool> EnableDescriptionPanel = null!;
+    internal static ConfigEntry<bool> EnableLocalization = null!;
+    internal static ConfigEntry<bool> EnableTranslationExport = null!;
+    internal static ConfigEntry<bool> LanguageRowOnly = null!;
+    internal static ConfigEntry<bool> SwitchXUnity = null!;
+    internal static ConfigEntry<bool> TameXUnity = null!;
+
+    /// <summary>界面维护的记忆（Hidden）：选中的语言文件（空 = 跟随游戏）、置顶、不导出、仅导出已选。</summary>
+    internal static ConfigEntry<string> LanguageFile = null!;
+    internal static ConfigEntry<string> PinnedMods = null!;
+    internal static ConfigEntry<string> ExportExcludedMods = null!;
+    internal static ConfigEntry<bool> ExportSelectedOnly = null!;
+    private static ConfigEntry<bool> _migrated = null!;
+
+    /// <summary>本模组在 ModConfig 列表里的行名 = 它的 FixNaming(插件名)（1.8.1 ModConfigPlugin.cs）。强制置顶与行名上色按它认行，改名时不用同步。</summary>
+    internal static readonly string SelfRowName = FixNaming(PluginName);
+
+    private void Awake()
+    {
+        Log = Logger;
+        BindConfig();
+        MigrateFromLocalFix();
+        Loc.EnsureBuiltInFiles();
+
+        if (OldLocalFixPresent(out string version))
+        {
+            Log.LogError($"[{PluginName}] 在场的 LocalFix {version} 仍自带模组设置页补丁（2.17.0 起才移除），本模组不挂载，请升级 LocalFix 或移除其一。");
+            return;
+        }
+
+        NormalizeSelfPin();
+
+        if (TameXUnity.Value && XUnityBridge.TameEndpoint() is { } tamed)
+        {
+            Log.LogInfo($"[翻译] 已适配 XUnityTranslate：{tamed}；词典翻译不受影响，确需机翻请关闭本模组的「Disable XUnity machine translation」选项。");
+        }
+
+        Harmony harmony = new(PluginGuid);
+        if (EnableTreeLayout.Value)
+        {
+            ModConfigTreeLayoutPatch.TryApply(harmony);
+        }
+
+        if (EnableLocalization.Value)
+        {
+            ModConfigLocalizationPatch.TryApply(harmony);
+        }
+
+        Log.LogInfo($"[{PluginName} v{PluginVersion}] 已加载。");
+        Log.LogInfo($"  树形侧栏: {(EnableTreeLayout.Value ? ModConfigTreeLayoutPatch.State : "关")}" +
+            $" / 界面本地化: {(EnableLocalization.Value ? ModConfigLocalizationPatch.State : "关")}" +
+            $" / 说明面板: {(EnableDescriptionPanel.Value ? "开" : "关")}" +
+            $" / 翻译工具: {(EnableTranslationExport.Value ? (XUnityBridge.Installed ? "开（含 XUnity 联动）" : "开（无 XUnity）") : "关")}" +
+            $" / 语言: {(string.IsNullOrEmpty(LanguageFile.Value) ? "跟随游戏" : LanguageFile.Value)}");
+    }
+
+    private static bool OldLocalFixPresent(out string version)
+    {
+        version = "";
+        if (!Chainloader.PluginInfos.TryGetValue(LocalFixGuid, out PluginInfo? info))
+        {
+            return false;
+        }
+
+        version = info.Metadata.Version.ToString();
+        return info.Metadata.Version < LocalFixSplitVersion;
+    }
+
+    private void BindConfig()
+    {
+        const string secLayout = "1. Layout";
+        EnableTreeLayout = Config.Bind(secLayout, "Tree sidebar", true, DescTreeSidebar);
+        EnableDescriptionPanel = Config.Bind(secLayout, "Description panel", true, DescDescriptionPanel);
+
+        const string secLoc = "2. Localization";
+        EnableLocalization = Config.Bind(secLoc, "UI localization", true, DescUiLocalization);
+        EnableTranslationExport = Config.Bind(secLoc, "Translation tools", true, DescTranslationTools);
+        LanguageRowOnly = Config.Bind(secLoc, "Language row only", false, DescLanguageRowOnly);
+        SwitchXUnity = Config.Bind(secLoc, "Switch XUnity language with the language file", true, DescSwitchXUnity);
+        TameXUnity = Config.Bind(secLoc, "Disable XUnity machine translation", true, DescTameXUnity);
+
+        const string secState = "3. State";
+        LanguageFile = Config.Bind(secState, "Language file", "",
+            new ConfigDescription("Selected language file name without .txt; empty = follow the game language. Maintained by the UI.", null, "Hidden"));
+        PinnedMods = Config.Bind(secState, "Pinned mods", "",
+            new ConfigDescription("Mods ticked in the Pin column (ModConfig's display names, | separated). Maintained by the UI.", null, "Hidden"));
+        ExportExcludedMods = Config.Bind(secState, "Excluded from export", "",
+            new ConfigDescription("Mods unticked in the Export column (ModConfig's display names, | separated). Maintained by the UI.", null, "Hidden"));
+        ExportSelectedOnly = Config.Bind(secState, "Export selected only", false,
+            new ConfigDescription("State of the \"Selected only\" toggle. Maintained by the UI.", null, "Hidden"));
+        _migrated = Config.Bind(secState, "Migrated from LocalFix", false,
+            new ConfigDescription("Set once the pin / export state has been copied from com.aiae.localfix.cfg.", null, "Hidden"));
+        _migrated = Config.Bind(secState, "Migrated from LocalFix", false,
+            new ConfigDescription("Set once the pin / export state has been copied from com.aiae.localfix.cfg.", null, "Hidden"));
+    }
+
+    /// <summary>
+    /// 置顶集合里不再需要自身行名——强制最顶是结构行为，不再吃「置顶」列的勾选。
+    /// 把曾经写进去的那条清掉，保持 cfg 干净。
+    /// </summary>
+    private static void NormalizeSelfPin()
+    {
+        string current = PinnedMods.Value ?? "";
+        if (current.Length == 0)
+        {
+            return;
+        }
+
+        List<string> kept = new List<string>();
+        bool removed = false;
+        foreach (string part in current.Split('|'))
+        {
+            string name = part.Trim();
+            if (name.Length == 0)
+            {
+                continue;
+            }
+
+            if (string.Equals(name, SelfRowName, StringComparison.Ordinal))
+            {
+                removed = true;
+                continue;
+            }
+
+            kept.Add(name);
+        }
+
+        if (removed)
+        {
+            PinnedMods.Value = string.Join("|", kept);
+            Log.LogInfo($"[{PluginName}] 已从置顶集合移除自身行名（自身行现在固定最顶）。");
+        }
+    }
+
+    private static string FixNaming(string input)
+    {
+        input = Regex.Replace(input, "([a-z])([A-Z])", "$1 $2");
+        input = Regex.Replace(input, "([A-Z])([A-Z][a-z])", "$1 $2");
+        input = Regex.Replace(input, "\\s+", " ");
+        input = Regex.Replace(input, "([A-Z]\\.)\\s([A-Z]\\.)", "$1$2");
+        return input.Trim();
+    }
+
+    /// <summary>首次运行把 LocalFix 第 9 分区的三项记忆搬过来（只搬一次，不改对方文件）。</summary>
+    private static void MigrateFromLocalFix()
+    {
+        if (_migrated.Value)
+        {
+            return;
+        }
+
+        _migrated.Value = true;
+        string path = Path.Combine(Paths.ConfigPath, "com.aiae.localfix.cfg");
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        try
+        {
+            bool inSection = false;
+            int moved = 0;
+            foreach (string raw in File.ReadLines(path, Encoding.UTF8))
+            {
+                string line = raw.Trim();
+                if (line.StartsWith("[", StringComparison.Ordinal))
+                {
+                    inSection = line.Contains("模组设置面板");
+                    continue;
+                }
+
+                if (!inSection || line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                int eq = line.IndexOf('=');
+                if (eq <= 0)
+                {
+                    continue;
+                }
+
+                string key = line.Substring(0, eq).Trim();
+                string value = line.Substring(eq + 1).Trim();
+                switch (key)
+                {
+                    case "置顶模组" when value.Length > 0:
+                        PinnedMods.Value = value;
+                        moved++;
+                        break;
+                    case "不导出的模组" when value.Length > 0:
+                        ExportExcludedMods.Value = value;
+                        moved++;
+                        break;
+                    case "仅导出已选":
+                        ExportSelectedOnly.Value = string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+                        moved++;
+                        break;
+                }
+            }
+
+            if (moved > 0)
+            {
+                Log.LogInfo($"[{PluginName}] 已从 LocalFix 配置迁移 {moved} 项（置顶 / 不导出 / 仅导出已选）。");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.LogWarning($"[{PluginName}] 读取 LocalFix 配置迁移失败（忽略）: {ex.Message}");
+        }
+    }
+}

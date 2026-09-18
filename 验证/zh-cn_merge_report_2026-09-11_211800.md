@@ -1,0 +1,70 @@
+# zh-cn.txt 合并报告 2026-09-11_211800
+
+- 新增 684 条；与已有键相同且译文相同、已跳过 29 条；同键不同译文 22 条（保留 zh-cn.txt 原有译文，旧词典的列在下面）。
+
+- `GUI`
+  - 保留（zh-cn.txt）: 界面
+  - 丢弃（mods.txt）: 界面显示
+- `General`
+  - 保留（zh-cn.txt）: 通用
+  - 丢弃（mods.txt）: 常规
+- ``
+  - 保留（zh-cn.txt）: = 模组名称与分类类别 ==
+  - 丢弃（mods.txt）: = 设定选项名称 ==
+- `SwapBackpack`
+  - 保留（zh-cn.txt）: 自动切换背包至被背起的人身上
+  - 丢弃（mods.txt）: 交换背包
+- `General`
+  - 保留（zh-cn.txt）: 通用
+  - 丢弃（mods.txt）: 通用设置
+- `Keybinds`
+  - 保留（zh-cn.txt）: 按键绑定
+  - 丢弃（mods.txt）: 快捷键
+- `UI`
+  - 保留（zh-cn.txt）: 界面
+  - 丢弃（mods.txt）: 界面设置
+- `Debug`
+  - 保留（zh-cn.txt）: 调试
+  - 丢弃（mods.txt）: 调试选项
+- `General`
+  - 保留（zh-cn.txt）: 通用
+  - 丢弃（mods.txt）: 常规设置
+- `Config Menu Key`
+  - 保留（zh-cn.txt）: 配置菜单键
+  - 丢弃（mods.txt）: 配置菜单快捷键
+- `AutoSave`
+  - 保留（zh-cn.txt）: 自动保存
+  - 丢弃（mods.txt）: 自动存档
+- `Debug`
+  - 保留（zh-cn.txt）: 调试
+  - 丢弃（mods.txt）: 调试设置
+- `UI`
+  - 保留（zh-cn.txt）: 界面
+  - 丢弃（mods.txt）: 界面设置
+- `FontSize`
+  - 保留（zh-cn.txt）: 字体大小
+  - 丢弃（mods.txt）: 距离文字大小
+- `ShowPreview`
+  - 保留（zh-cn.txt）: 显示存档预览信息
+  - 丢弃（mods.txt）: 绘制时显示本地路径预览
+- `General`
+  - 保留（zh-cn.txt）: 通用
+  - 丢弃（checkpointssave.txt）: 通用设置
+- `Debug`
+  - 保留（zh-cn.txt）: 调试
+  - 丢弃（checkpointssave.txt）: 调试选项
+- `Plantholder Overhaul`
+  - 保留（zh-cn.txt）: 植物展示台大修
+  - 丢弃（plantholderoverhaul.txt）: 迷你景观台
+- `AutoSave`
+  - 保留（zh-cn.txt）: 自动保存
+  - 丢弃（SaveMod_Options.txt）: 自动存档
+- `Debug`
+  - 保留（zh-cn.txt）: 调试
+  - 丢弃（SaveMod_Options.txt）: 调试设置
+- `UI`
+  - 保留（zh-cn.txt）: 界面
+  - 丢弃（SaveMod_Options.txt）: 界面设置
+- `General`
+  - 保留（zh-cn.txt）: 通用
+  - 丢弃（terrainrandomiser.txt）: 通用设置
