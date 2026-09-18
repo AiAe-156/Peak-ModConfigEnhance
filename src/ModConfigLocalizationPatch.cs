@@ -77,13 +77,6 @@ internal static class ModConfigLocalizationPatch
             return;
         }
 
-        if (ModConfigSupport.IsLocalizationFork)
-        {
-            State = "在场的是 ModSettingsLocalization 分支版，跳过";
-            Plugin.Log.LogWarning($"[界面汉化] {State}（它自带汉化）。");
-            return;
-        }
-
         Type? pluginType = AccessTools.TypeByName(ModConfigSupport.PluginTypeName);
         Type? bindingUiType = AccessTools.TypeByName(ModConfigSupport.BindingUiTypeName);
         Type? menuButtonType = AccessTools.TypeByName(ModConfigSupport.MenuButtonTypeName);

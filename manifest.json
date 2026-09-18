@@ -1,7 +1,7 @@
 {
   "name": "ModConfigEnhance",
-  "version_number": "1.0.42",
-  "website_url": "",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/AiAe-156/Peak-ModConfigEnhance",
   "description": "ModConfig settings page enhancements: tree sidebar, description panel, translation tools, language files.",
   "dependencies": [
     "BepInEx-BepInExPack_PEAK-5.4.2403",

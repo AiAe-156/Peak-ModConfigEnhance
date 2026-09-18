@@ -9,7 +9,7 @@ namespace ModConfigEnhance;
 /// <summary>
 /// 各补丁共用：ModConfig（PEAKLib.ModConfig）的在场检测、版本核对与目标方法解析。
 ///
-/// 两个子补丁都只在这里确认过「插件在场、且确实是官方 ModConfig 而非它的分支版」之后
+/// 两个子补丁都只在这里确认过插件在场之后
 /// 才去解析类型；解析一律按名字走，任何一环缺失就整项跳过，不做半挂载。
 /// 补丁体内才直接引用 ModConfig 的类型（工程里对它做了 publicize）—— 那些方法只有
 /// 挂载成功后才会被 JIT，ModConfig 缺席时不会触发类型加载失败。
@@ -36,15 +36,6 @@ internal static class ModConfigSupport
     internal static bool IsInstalled => Info != null;
 
     internal static string InstalledVersion => Info?.Metadata.Version.ToString() ?? "未知";
-
-    internal static string InstalledName => Info?.Metadata.Name ?? "";
-
-    /// <summary>
-    /// ModSettingsLocalization（youxia173）是 ModConfig 1.6.0 的分支版，复用了同一个 GUID，
-    /// 但页面类叫 ModdedSettingsMenu、且自带竖排模组列表与汉化 —— 与本模组的目标结构不同，直接跳过。
-    /// </summary>
-    internal static bool IsLocalizationFork =>
-        InstalledName.IndexOf("ModSettingsLocalization", StringComparison.OrdinalIgnoreCase) >= 0;
 
     /// <summary>
     /// 找 C# 静态本地函数编译出来的方法。Roslyn 把 <c>Start()</c> 里的 <c>builderDelegate</c>

@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# ModConfigEnhance: local snapshots, verification scripts and release zips stay out of the repo
+备份/
+验证/
+发布/

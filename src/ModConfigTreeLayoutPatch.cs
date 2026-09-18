@@ -114,13 +114,6 @@ internal static class ModConfigTreeLayoutPatch
             return;
         }
 
-        if (ModConfigSupport.IsLocalizationFork)
-        {
-            State = "在场的是 ModSettingsLocalization 分支版，跳过";
-            Plugin.Log.LogWarning($"[面板布局] {State}（它自带竖排模组列表，且页面结构与官方 1.8.0 不同）。");
-            return;
-        }
-
         Type? pluginType = AccessTools.TypeByName(ModConfigSupport.PluginTypeName);
         Type? menuType = AccessTools.TypeByName(ModConfigSupport.MenuTypeName);
         MethodInfo? builder = pluginType != null
