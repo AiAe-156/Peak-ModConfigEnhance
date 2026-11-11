@@ -60,7 +60,8 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="Deploy" AfterTargets="PostBuildEvent" Condition="'$(EnableDeployment)' != 'false'">
+  <!-- 1.0.3：拆分后游戏里装的是完整版 IGMM，MCE 默认只构建不部署；确需装进游戏时加 -p:EnableDeployment=true -->
+  <Target Name="Deploy" AfterTargets="PostBuildEvent" Condition="'$(EnableDeployment)' == 'true'">
     <MakeDir Directories="$(DeployDir)" />
     <Copy SourceFiles="$(TargetPath)"
           DestinationFolder="$(DeployDir)"

@@ -226,8 +226,6 @@ internal static class ModConfigTreeLayoutPatch
         GamepadSupport.ApplyPatches(harmony);
 
         // 1.0.3：PEAK 3.1.0 起模组的小数参数被取整显示、手打时小数点会被吞；只接管模组参数，原版设置不受影响
-        ModFloatDisplayPatch.Apply(harmony);
-        Plugin.Log.LogInfo("[小数显示] " + ModFloatDisplayPatch.State);
 
         Attached = true;
         State = $"已挂载（ModConfig {ModConfigSupport.InstalledVersion}{(TimeThemeBridge.Available ? "，随 TimeTheme 昼夜跟色" : "")}）";

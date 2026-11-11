@@ -67,6 +67,9 @@ public class Plugin : BaseUnityPlugin
         }
 
         Harmony harmony = new(PluginGuid);
+        // 1.0.3：小数显示是数据正确性（PEAK 3.1 下手打 1.25 会存错），与树形侧栏无关，独立挂载
+        ModFloatDisplayPatch.Apply(harmony);
+        Log.LogInfo("[小数显示] " + ModFloatDisplayPatch.State);
         if (EnableTreeLayout.Value)
         {
             ModConfigTreeLayoutPatch.TryApply(harmony);
