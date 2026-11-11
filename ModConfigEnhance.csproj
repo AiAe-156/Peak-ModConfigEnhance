@@ -8,7 +8,7 @@
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
     <TargetFramework>netstandard2.1</TargetFramework>
     <Nullable>enable</Nullable>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -39,21 +39,15 @@
          ModConfig 是硬依赖（BepInDependency），XUnity / TimeTheme 全反射、不引用 DLL。
          引用三层兜底：$(PluginsDir) 现用整合包扁平布局 → BepInEx3 扁平布局 → BepInEx 分区布局。 -->
     <Reference Include="PEAKLib.Core">
-      <HintPath Condition="Exists('$(PluginsDir)PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll')">$(PluginsDir)PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll</HintPath>
-      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll') And Exists('$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll')">$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll</HintPath>
-      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll') And !Exists('$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_Core\com.github.PEAKModding.PEAKLib.Core.dll')">$(GameDir)BepInEx\plugins\0核心&amp;基础模组\[0依赖]Mods\PEAKModding-PEAKLib_Core\plugins\com.github.PEAKModding.PEAKLib.Core.dll</HintPath>
+      <HintPath>$(PluginsDir)依赖模组\[依赖]PEAKLib核心-PEAKLib_Core\plugins\com.github.PEAKModding.PEAKLib.Core.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="PEAKLib.UI">
-      <HintPath Condition="Exists('$(PluginsDir)PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll')">$(PluginsDir)PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll</HintPath>
-      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll') And Exists('$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll')">$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll</HintPath>
-      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll') And !Exists('$(GameDir)BepInEx3\plugins\PEAKModding-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll')">$(GameDir)BepInEx\plugins\0核心&amp;基础模组\[0依赖]Mods\PEAKModding-PEAKLib_UI-1.7.0\com.github.PEAKModding.PEAKLib.UI.dll</HintPath>
+      <HintPath>$(PluginsDir)依赖模组\[依赖]PEAKLib界面-PEAKLib_UI\com.github.PEAKModding.PEAKLib.UI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="PEAKLib.ModConfig" Publicize="true">
-      <HintPath Condition="Exists('$(PluginsDir)PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll')">$(PluginsDir)PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll</HintPath>
-      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll') And Exists('$(GameDir)BepInEx3\plugins\PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll')">$(GameDir)BepInEx3\plugins\PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll</HintPath>
-      <HintPath Condition="!Exists('$(PluginsDir)PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll') And !Exists('$(GameDir)BepInEx3\plugins\PEAKModding-ModConfig\com.github.PEAKModding.PEAKLib.ModConfig.dll')">$(GameDir)BepInEx\plugins\0核心&amp;基础模组\[功能]游戏内更改mod配置-ModConfig-1.8.1\com.github.PEAKModding.PEAKLib.ModConfig.dll</HintPath>
+      <HintPath>$(PluginsDir)0基础模组\[功能]游戏内更改mod配置-ModConfig-1.8.2\com.github.PEAKModding.PEAKLib.ModConfig.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="0Harmony">

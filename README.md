@@ -13,6 +13,8 @@ PEAK · enhancements for the ModConfig (PEAKLib.ModConfig) settings page
 > Compatible with TimeTheme's purple night theme — √
 > …and other small tweaks
 
+> **Looking for more?** [In-Game Mod Manager](https://thunderstore.io/c/peak/) is the full version: everything here plus a mod overview, profiles, updates and modpacks. It already includes this mod's features, so install only one of the two.
+
 ## Features
 
 | Feature | Details |
@@ -124,6 +126,8 @@ PEAK · ModConfig（PEAKLib.ModConfig）设置页增强
 > 名称排序和置顶功能  - √
 > 兼容TimeTheme 夜间幽紫主题 - √
 > 以及其他小改动...
+
+> **想要更多功能？** 完整版「游戏内模组管理器」（In-Game Mod Manager）包含本模组的全部功能，另有模组概览、配置方案、更新和整合包。两者功能重叠，只装其中一个即可。
 
 ## 功能
 

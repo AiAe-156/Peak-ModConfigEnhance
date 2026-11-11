@@ -1,5 +1,18 @@
 # 更新日志 / Changelog
 
+## 1.0.3 — 2026-11-11
+
+### 修复 / Fixed
+
+- 适配 PEAK 3.1.0：游戏改了设置页的数字格式后，模组的小数参数显示成整数（0.35 显示为 0），手动输入时小数点还会被吞掉、存成错误的值。现在模组参数最多显示三位小数，输入时保留你敲的内容；游戏自己的设置保持新版的显示方式。
+
+### 新增 / Added
+
+- 同时装了完整版「游戏内模组管理器」（In-Game Mod Manager）时，日志和设置页说明面板会提示一次：它已包含本模组的全部功能，两个一起开会重复修改设置页，建议只保留一个。只提示，不阻止。
+---
+- PEAK 3.1.0 support: after the game changed how settings format numbers, mod decimal parameters showed as whole numbers (0.35 showed as 0), and typing a value could drop the decimal point and store the wrong number. Mod parameters now show up to three decimals and keep what you type; the game's own settings keep the new look.
+- When the full **In-Game Mod Manager** is also installed, the log and the settings-page description panel point it out once: it already includes everything this mod does, and running both changes the settings page twice. Keep only one. This is a notice only; nothing is blocked.
+
 ## 1.0.2 — 2026-09-18
 
 ### 修复 / Fixed

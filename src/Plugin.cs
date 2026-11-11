@@ -21,7 +21,11 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "com.aiae.modconfigenhance";
     public const string PluginName = "ModConfig Enhance";
-    public const string PluginVersion = "1.0.2";
+    public const string PluginVersion = "1.0.3";
+
+    /// <summary>完整版「游戏内模组管理器」（In-Game Mod Manager）。它自带同样的设置页增强，两者同开会重复改同一个页面：只提示，不拦截。</summary>
+    internal const string InGameModManagerGuid = "com.aiae.ingamemodmanager";
+    internal static bool InGameModManagerLoaded => BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey(InGameModManagerGuid);
 
     internal static ManualLogSource Log { get; private set; } = null!;
 
@@ -74,6 +78,8 @@ public class Plugin : BaseUnityPlugin
         }
 
         Log.LogInfo($"[{PluginName} v{PluginVersion}] 已加载。");
+        if (InGameModManagerLoaded)
+            Log.LogWarning("[共存] 同时装了「游戏内模组管理器」（In-Game Mod Manager）：它已包含本模组的全部功能，两个一起开会重复修改设置页。建议只保留其中一个。");
         Log.LogInfo($"  树形侧栏: {(EnableTreeLayout.Value ? ModConfigTreeLayoutPatch.State : "关")}" +
             $" / 界面本地化: {(EnableLocalization.Value ? ModConfigLocalizationPatch.State : "关")}" +
             $" / 说明面板: {(EnableDescriptionPanel.Value ? "开" : "关")}" +

@@ -236,6 +236,14 @@ internal static class ModConfigDescriptionPanel
         {
             if (mod == null)
             {
+                if (Plugin.InGameModManagerLoaded)
+                {
+                    // 1.0.3：完整版同时在场时提示一次（只提示，不拦截）
+                    ShowNotice(Loc.T("In-Game Mod Manager is also installed. It already includes everything ModConfig Enhance does, and running both changes this page twice. Keep only one of them.",
+                        "同时装了「游戏内模组管理器」：它已包含 ModConfig Enhance 的全部功能，两个一起开会重复修改这个页面。建议只保留其中一个。",
+                        "同時裝了「遊戲內模組管理器」：它已包含 ModConfig Enhance 的全部功能，兩個一起開會重複修改這個頁面。建議只保留其中一個。"), warning: true);
+                    return;
+                }
                 ShowNotice(Loc.T("Select a mod to view its information.", "选择左侧模组查看信息。", "選擇左側模組查看資訊。"));
                 return;
             }
