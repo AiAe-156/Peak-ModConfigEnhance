@@ -577,7 +577,26 @@ internal static class Loc
 
         if (merged.Entries.Count == 0)
         {
-            throw new InvalidDataException(Get("NOTICE_LANG_NO_ENTRIES"));
+            // 1.0.3：内建三种语言（en-us / zh-cn / zh-tw）的文件被清空或只剩注释时，用内置译文补上，不报错——
+            // 否则 cfg 里选着这种语言时每次启动都应用失败，界面停在原状态。自建语言文件为空仍报错，让作者知道文件坏了。
+            Func<Term, string>? builtIn = merged.Code.ToLowerInvariant() switch
+            {
+                "en-us" or "en" => t => t.English,
+                "zh-cn" or "zh" => t => t.SimplifiedChinese,
+                "zh-tw" => t => t.TraditionalChinese,
+                _ => null,
+            };
+            if (builtIn == null)
+            {
+                throw new InvalidDataException(Get("NOTICE_LANG_NO_ENTRIES"));
+            }
+
+            foreach (Term term in Terms)
+            {
+                merged.Entries[term.Key] = builtIn(term);
+            }
+
+            Plugin.Log.LogWarning($"[语言] {merged.DisplayOrStem} 没有有效词条，已改用内置译文（删除该文件后重启会重新生成完整的内建文件）。");
         }
 
         return merged;
