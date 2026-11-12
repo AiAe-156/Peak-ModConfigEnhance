@@ -161,6 +161,7 @@ internal static class ModConfigTranslationExport
         button.Text.fontSize = ToolbarFontSize;
         button.Text.textWrappingMode = TextWrappingModes.NoWrap;
         button.Text.overflowMode = TextOverflowModes.Overflow;
+        ModConfigSidebarWidgets.FitCaption(button.Text); // 1.0.4：放不下时缩字，不出框
         return button;
     }
 

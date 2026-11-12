@@ -554,11 +554,13 @@ internal static class ModConfigSidebarWidgets
         RectTransform collapsible = MakeRowContainer(page, "MCE_ToolbarCollapsible", left, top, width, ToolbarHeight * 2f + ToolbarRowGap);
         refs.Collapsible = collapsible;
 
+        // 1.0.4：三格平分（原先前两格固定 92，「Selected only」英文放不下）；文字放不下时自动缩到 10 号
+        float third = Mathf.Floor((width - ToolbarGap * 2f) / 3f);
         float x = 0f;
-        ModConfigTranslationExport.MakeToolbarButton(collapsible, "MCE_ExportTexts", false, x, 0f, ToolbarButtonWidth, ToolbarHeight);
-        x += ToolbarButtonWidth + ToolbarGap;
-        ModConfigTranslationExport.MakeToolbarButton(collapsible, "MCE_ExportUntranslated", true, x, 0f, ToolbarButtonWidth, ToolbarHeight);
-        x += ToolbarButtonWidth + ToolbarGap;
+        FitCaption(ModConfigTranslationExport.MakeToolbarButton(collapsible, "MCE_ExportTexts", false, x, 0f, third, ToolbarHeight).Text);
+        x += third + ToolbarGap;
+        FitCaption(ModConfigTranslationExport.MakeToolbarButton(collapsible, "MCE_ExportUntranslated", true, x, 0f, third, ToolbarHeight).Text);
+        x += third + ToolbarGap;
 
         float toggleWidth = width - x;
         GameObject row = new GameObject("MCE_ExportSelectedOnly", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -1097,6 +1099,16 @@ internal static class ModConfigSidebarWidgets
         return new Vector3(a.r, a.g, a.b) == new Vector3(b.r, b.g, b.b);
     }
 
+    /// <summary>1.0.4：工具行文字放不下时缩字（13 → 10），不折行、不出框。</summary>
+    internal static void FitCaption(TMP_Text text)
+    {
+        text.enableAutoSizing = true;
+        text.fontSizeMax = text.fontSize > 0f ? text.fontSize : HeaderFontSize;
+        text.fontSizeMin = 10f;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
+        text.overflowMode = TextOverflowModes.Ellipsis;
+    }
+
     private static void StyleLabel(TextMeshProUGUI text, TextAlignmentOptions alignment)
     {
         text.enableAutoSizing = false;
@@ -1326,7 +1338,7 @@ internal static class ModConfigSidebarWidgets
             _rows.Add(widgets);
         }
 
-        /// <summary>置顶行左缘 4 宽的竖条，颜色与 ✓ 同（白天天蓝 / 夜间深蓝），一眼能认出哪些是钉住的。</summary>
+        /// <summary>置顶行左缘的细竖线。1.0.4：4 宽天蓝 → 2 宽青柠黄绿（与完整版一致；与 ✓、选中色、蓝底都不混）。</summary>
         private static GameObject MakeAccent(Transform row, bool active)
         {
             GameObject go = new GameObject("MCE_PinAccent", typeof(RectTransform), typeof(Image));
@@ -1336,11 +1348,10 @@ internal static class ModConfigSidebarWidgets
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 0.5f);
             rect.offsetMin = new Vector2(0f, 4f);
-            rect.offsetMax = new Vector2(4f, -4f);
+            rect.offsetMax = new Vector2(2f, -4f);
             Image image = go.GetComponent<Image>();
             image.raycastTarget = false;
-            ApplyRounded(image, 2f);
-            Tint(image, MarkDay, MarkNight);
+            image.color = ModConfigLook.PinAccent;
             go.SetActive(active);
             return go;
         }

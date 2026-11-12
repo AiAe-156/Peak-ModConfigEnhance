@@ -39,16 +39,27 @@ namespace ModConfigEnhance;
 /// </summary>
 internal static class ModConfigTreeLayoutPatch
 {
-    // ── 版面常量（画布参考分辨率 1920×1080；左栏 x 65..365，与 ModConfig 自己的搜索框白底左右对齐）──
+    // ── 版面常量（画布参考分辨率 1920×1080；1.0.4 起左栏 x 65..425，搜索框改到同宽）──
     internal const float SidebarLeft = 65f;
-    internal const float SidebarWidth = 300f;
+
+    /// <summary>搜索框顶边（页面左上角坐标系）。1.0.4：ModConfig 原框 300×70，改成与左栏同宽、高 40。</summary>
+    private const float SearchBoxTop = 240f;
+    private const float SearchBoxHeight = 40f;
+
+    /// <summary>1.0.4：「搜索」标签固定一行、30 号（原版 36 号不定宽，换字体后会折成两行、被搜索框盖住）。</summary>
+    private const float SearchLabelFontSize = 30f;
+    private const float SearchLabelHeight = 40f;
+
+    /// <summary>1.0.4：左栏 300 → 360（工具行英文放不下）；右侧内容区左缘跟着右移 60（ModConfig 原 428）。</summary>
+    internal const float SidebarWidth = 360f;
+    private const float ContentLeft = 488f;
 
     /// <summary>列表右侧的滚动条：贴在搜索框右缘外 6px，宽 10（2.16.0）。</summary>
     private const float ScrollbarGap = 6f;
     private const float ScrollbarWidth = 10f;
 
-    /// <summary>搜索框底边 -310 下面先放工具行（导出翻译 / 查漏翻 / 仅导出已选；显示原文 / 重载翻译 / 打开目录；语言 ▾ / 刷新），再是列表。「隐藏本地化相关按钮」时只剩语言行，即时生效。</summary>
-    internal const float ToolbarTop = 318f;
+    /// <summary>搜索框底边 -280 下面先放工具行（导出翻译 / 查漏翻 / 仅导出已选；显示原文 / 重载翻译 / 打开目录；语言 ▾ / 刷新），再是列表。「隐藏本地化相关按钮」时只剩语言行，即时生效。1.0.4：搜索框收到高 40，工具行跟着上移 30。</summary>
+    internal const float ToolbarTop = 288f;
 
     /// <summary>实际可见的工具行排数：1 只留语言行，3 全部。</summary>
     private static int VisibleToolbarRows => Plugin.HideLocalizationButtons.Value ? 1 : ModConfigSidebarWidgets.ToolbarRows;
@@ -60,10 +71,11 @@ internal static class ModConfigTreeLayoutPatch
     private const float SidebarBottom = 40f;
     private const float SidebarBottomInGame = 60f;
 
-    internal const float ModRowHeight = 44f;
-    private const float SectionRowHeight = 34f;
-    private const float RowSpacing = 6f;
-    private const float SectionSpacing = 3f;
+    /// <summary>1.0.4：模组行 44 → 30、分区行 34 → 26，间距收紧（与完整版一致，一屏多看几个模组）。</summary>
+    internal const float ModRowHeight = 30f;
+    private const float SectionRowHeight = 26f;
+    private const float RowSpacing = 2f;
+    private const float SectionSpacing = 1f;
     internal const float ModTextIndent = 14f;
     private const float SectionInset = 18f;
     private const float SectionTextIndent = 22f;
@@ -77,8 +89,9 @@ internal static class ModConfigTreeLayoutPatch
     internal const int ControlsFilter = 16;
     internal const int AllFilter = 31;
 
-    /// <summary>PeakHorizontalTabs 给页签底色用的默认色，我们自己加的行沿用它，TimeTheme 也认这个色。</summary>
-    internal static readonly Color TabBackground = new Color(0.1792453f, 0.1253449f, 0.09046815f, 62f / 85f);
+    /// <summary>自建行 / 面板的底色。1.0.4 起默认跟随游戏 3.1 的 SettingsColors.BoxColor（深蓝），
+    /// 「经典棕色」开关或旧版游戏用 PeakHorizontalTabs 的棕色（TimeTheme 夜里认这个色）。见 <see cref="ModConfigLook"/>。</summary>
+    internal static Color TabBackground => ModConfigLook.Box;
 
     internal static bool Attached { get; private set; }
 
@@ -207,8 +220,9 @@ internal static class ModConfigTreeLayoutPatch
             Plugin.Log.LogWarning("[面板布局] 找不到 InputBindingSettingUI.SetupDuplicateBindText，按键重复警告保持 ModConfig 原位置。");
         }
 
-        // 页签文字的夜间色：只在 TimeTheme 在场时接管（对应它给原版 SettingsTABSButton.Update 打的补丁）
-        if (TimeThemeBridge.Available)
+        // 页签文字色：跟随游戏新配色时接管（选中深蓝字 / 未选中米色字），TimeTheme 在场时再管夜间色
+        Plugin.Log.LogInfo("[配色] " + ModConfigLook.State);
+        if (TimeThemeBridge.Available || !ModConfigLook.Classic)
         {
             Type? tabButtonType = AccessTools.TypeByName(ModConfigSupport.TabButtonTypeName);
             MethodInfo? tabUpdate = tabButtonType != null ? AccessTools.Method(tabButtonType, "Update", Type.EmptyTypes) : null;
@@ -297,7 +311,7 @@ internal static class ModConfigTreeLayoutPatch
         ModConfigPaperStyle.Resolve(page); // 行底、表头、工具行、复选框都要用
         foreach (GameObject row in modTabs.Tabs)
         {
-            StyleRow(row, ModRowHeight, ModTextIndent, 16f, 22f, backgroundAlpha: null);
+            StyleRow(row, ModRowHeight, ModTextIndent, 12f, 15f, backgroundAlpha: null);
         }
 
         // 1b. 列表右侧的滚动条（顶边记下，「隐藏本地化相关按钮」切换时跟着列表顶走）
@@ -367,14 +381,37 @@ internal static class ModConfigTreeLayoutPatch
             }
         }
 
-        // 3d. 搜索框：夜间按 TimeTheme 的输入框 ColorBlock 上色（它自己收不到这个后建的控件）
-        if (TimeThemeBridge.Available)
+        // 3d. 搜索框：1.0.4 与左栏同宽、高 40；夜间按 TimeTheme 的输入框 ColorBlock 上色（它自己收不到这个后建的控件）
         {
             Transform? search = page.Find("SearchInput");
-            if (search != null)
+            LayoutSearchInput(search);
+            if (TimeThemeBridge.Available && search != null)
             {
                 TimeThemeBridge.ApplyOptionsTheme(search, TimeThemeBridge.IsDark);
             }
+        }
+
+        // 3d'. 1.0.4：「Everything」筛选下拉右缘与左栏、搜索框右缘对齐（ModConfig 原放在 x 185..385）
+        AlignFilterDropdown(page, menu.FilterDropdown);
+
+        // 3e. 1.0.4：「搜索」标签固定一行（它是页面直属 PeakText，ModConfig 放在 (65, -190)）
+        try
+        {
+            TMP_Text? searchLabel = null;
+            float nearest = float.MaxValue;
+            foreach (Transform child in page)
+            {
+                PeakText? peakText = child.GetComponent<PeakText>();
+                if (peakText == null || peakText.Text == null) continue;
+                float distance = (((RectTransform)child).anchoredPosition - new Vector2(SidebarLeft, -190f)).sqrMagnitude;
+                if (distance < nearest) { nearest = distance; searchLabel = peakText.Text; }
+            }
+
+            if (nearest < 60f * 60f && searchLabel != null) LayoutSearchLabel(searchLabel);
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.LogWarning($"[面板布局] 「搜索」标签整理失败，保持原样: {ex.Message}");
         }
 
         // 4. 右侧：去掉「MODS / SECTIONS」两个标签（内容面板直属的 PeakText 只有它们俩），选项列表顶到面板顶部
@@ -385,6 +422,10 @@ internal static class ModConfigTreeLayoutPatch
                 child.gameObject.SetActive(false);
             }
         }
+
+        // 4a. 1.0.4：左栏加宽 60，右侧内容区（ModConfig 原 offsetMin.x = 428）跟着右移，右缘不动
+        RectTransform contentPanel = (RectTransform)menu.transform;
+        contentPanel.offsetMin = new Vector2(ContentLeft, contentPanel.offsetMin.y);
 
         if (menu.Content.parent is RectTransform scrollArea)
         {
@@ -499,6 +540,67 @@ internal static class ModConfigTreeLayoutPatch
     /// 页签行样式。PeakHorizontalTabs.AddTab 给的是横排用的 minWidth 220、居中、全大写；
     /// 竖排改成撑满宽度、固定行高、左对齐、正常大小写，过长的名字缩小字号后再省略。
     /// </summary>
+    /// <summary>
+    /// 1.0.4：「搜索」标签。PeakText 只在 SetText 时按当时的字体算一次宽度，之后换语言 / 换字体不再更新，
+    /// 「Search」会折成「Sear / ch」，第二行压在搜索框下面。改成固定一行、30 号、底对齐在搜索框上方。
+    /// </summary>
+    private static void LayoutSearchLabel(TMP_Text label)
+    {
+        RectTransform rect = label.rectTransform;
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(SidebarLeft, -(SearchBoxTop - 4f - SearchLabelHeight));
+        rect.sizeDelta = new Vector2(SidebarWidth, SearchLabelHeight);
+        label.enableAutoSizing = false;
+        label.fontSize = SearchLabelFontSize;
+        label.textWrappingMode = TextWrappingModes.NoWrap;
+        label.overflowMode = TextOverflowModes.Overflow;
+        label.alignment = TextAlignmentOptions.BottomLeft;
+    }
+
+    /// <summary>
+    /// 1.0.4：筛选下拉。PeakDropdown 的外层（克隆的设置单元格）与内层下拉框的锚点 / 枢轴关系不好推，
+    /// 直接量内层的实际右缘（换算到页面坐标），差多少把外层平移多少，让右缘落在左栏右缘。
+    /// </summary>
+    private static void AlignFilterDropdown(RectTransform page, PeakDropdown? dropdown)
+    {
+        if (dropdown == null || !(dropdown.transform is RectTransform outer) || dropdown.RectTransform == null || outer.parent != page)
+        {
+            return;
+        }
+
+        Vector3[] corners = new Vector3[4];
+        dropdown.RectTransform.GetWorldCorners(corners);
+        float right = page.InverseTransformPoint(corners[2]).x - page.rect.xMin; // 相对页面左缘
+        float target = SidebarLeft + SidebarWidth;
+        if (float.IsNaN(right) || Mathf.Abs(right - target) < 0.5f)
+        {
+            return;
+        }
+
+        outer.anchoredPosition += new Vector2(target - right, 0f);
+    }
+
+    /// <summary>1.0.4：搜索框与左栏同宽（65..425），高 40；输入字与占位字 20 号。</summary>
+    private static void LayoutSearchInput(Transform? input)
+    {
+        if (!(input is RectTransform rect))
+        {
+            return;
+        }
+
+        // PeakTextInput 的枢轴在中心、锚点在左上
+        rect.sizeDelta = new Vector2(SidebarWidth, SearchBoxHeight);
+        rect.anchoredPosition = new Vector2(SidebarLeft + SidebarWidth / 2f, -(SearchBoxTop + SearchBoxHeight / 2f));
+        foreach (TextMeshProUGUI text in input.GetComponentsInChildren<TextMeshProUGUI>(true))
+        {
+            text.fontSizeMin = 20f;
+            text.fontSizeMax = 20f;
+            text.fontSize = 20f;
+        }
+    }
+
     private static void StyleRow(GameObject row, float height, float textIndent, float fontMin, float fontMax, float? backgroundAlpha)
     {
         StyleRowFrame(row, height);
@@ -530,12 +632,9 @@ internal static class ModConfigTreeLayoutPatch
         if (image != null)
         {
             ModConfigPaperStyle.Apply(image, 8f);
-            if (backgroundAlpha.HasValue)
-            {
-                Color color = image.color;
-                color.a = backgroundAlpha.Value;
-                image.color = color;
-            }
+            // 1.0.4：PeakHorizontalTabs.AddTab 写死棕色，改成当前配色（保留各自透明度）
+            Color box = ModConfigLook.Box;
+            image.color = new Color(box.r, box.g, box.b, backgroundAlpha ?? image.color.a);
         }
 
         Transform? selectedTransform = row.transform.Find("Selected");
@@ -543,6 +642,8 @@ internal static class ModConfigTreeLayoutPatch
         if (selected != null)
         {
             ModConfigPaperStyle.Apply(selected, 8f);
+            Color fill = ModConfigLook.SelectedFill;
+            selected.color = new Color(fill.r, fill.g, fill.b, selected.color.a);
         }
     }
 
@@ -739,7 +840,7 @@ internal static class ModConfigTreeLayoutPatch
 
         if (button.text != null)
         {
-            button.text.color = button.Selected ? Color.black : (dark ? TimeThemeBridge.DarkTabText : Color.white);
+            button.text.color = button.Selected ? ModConfigLook.TextSelected : (dark ? TimeThemeBridge.DarkTabText : ModConfigLook.TextDefault);
         }
     }
 
@@ -827,7 +928,20 @@ internal static class ModConfigTreeLayoutPatch
 
         if (!dark || button.text == null || button.Selected)
         {
-            return true;
+            if (ModConfigLook.Classic || button.text == null)
+            {
+                return true;
+            }
+
+            // 1.0.4 跟随游戏 3.1：与原版 SettingsTABSButton.Update 同一套渐变，目标色换成 SettingsColors
+            Color target = button.Selected ? ModConfigLook.TextSelected : ModConfigLook.TextDefault;
+            button.text.color = Color.Lerp(button.text.color, target, Time.unscaledDeltaTime * 7f);
+            if (button.SelectedGraphic != null)
+            {
+                button.SelectedGraphic.SetActive(button.Selected);
+            }
+
+            return false;
         }
 
         button.text.color = Color.Lerp(button.text.color, TimeThemeBridge.DarkTabText, Time.unscaledDeltaTime * 7f);
@@ -957,7 +1071,7 @@ internal static class ModConfigTreeLayoutPatch
             bool selfSelected = selected != null && selected.category == Plugin.SelfRowName;
             foreach (GameObject row in sectionTabs.Tabs)
             {
-                StyleRow(row, SectionRowHeight, SectionTextIndent, 14f, 18f, SectionBackgroundAlpha);
+                StyleRow(row, SectionRowHeight, SectionTextIndent, 11f, 14f, SectionBackgroundAlpha);
                 GamepadSupport.MarkSelectable(row, listScroll, (RectTransform)row.transform);
                 GamepadSupport.WireSectionRow(row); // 手柄：分区行按 A → 进右栏
                 ModdedTABSButton? rowButton = row.GetComponent<ModdedTABSButton>();

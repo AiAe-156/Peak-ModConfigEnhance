@@ -1,5 +1,28 @@
 # 更新日志 / Changelog
 
+## 1.0.4 — 2026-11-13
+
+### 更改 / Changed
+
+- 模组设置页的左栏、页签和说明面板改为跟随游戏设置菜单的配色（PEAK 3.1 起为深蓝底、米色字），不再停留在旧版的棕色，和右侧的选项格子一致。想要旧外观可打开新选项「经典棕色配色」（1. Layout，重启生效）。旧版游戏没有新配色时自动使用棕色。
+- 左栏加宽到 360，右侧选项区跟着右移；搜索框改为与左栏同宽、高度收窄，「搜索」标签固定一行不再被折断压住；筛选下拉框与左栏右缘对齐。
+- 工具行第一行三个按钮平分宽度，文字放不下时自动缩小字号，不再溢出按钮。
+- 侧栏行收紧：模组行 44 → 30、分区行 34 → 26，间距同步缩小，一屏能看到更多模组。
+- 置顶模组左缘的标记改为 2 像素宽的青柠色细线，在蓝、棕两种底色上都醒目，也不会和勾选、选中色混淆。
+
+### 已知限制 / Known limitation
+
+- 跟随游戏配色时，TimeTheme 的夜间配色只认旧棕色，所以夜里这几处不会被它换成夜间色；需要夜间跟色请打开「经典棕色配色」。
+
+---
+
+- The mod settings page's left column, tabs and description panel now follow the game's settings colours (dark blue with cream text since PEAK 3.1) instead of the old brown, matching the option cells on the right. Turn on the new **Classic brown colours** option (1. Layout, restart to apply) to keep the old look. Older game versions without the new colours keep the brown automatically.
+- The left column is wider (360) and the options area moves right with it; the search box now matches the column width and is shorter, the "Search" label stays on one line instead of wrapping under the box, and the filter dropdown lines up with the column's right edge.
+- The three buttons in the first toolbar row share the width equally and shrink their text when it does not fit, instead of spilling out.
+- Tighter sidebar rows: mod rows 44 → 30, section rows 34 → 26, with smaller gaps, so more mods fit on screen.
+- The pinned-mod marker is now a 2-pixel lime line, visible on both blue and brown and distinct from the tick and the selection colour.
+- Known limitation: with the game colours, TimeTheme's night palette only recognises the old brown, so these parts are not recoloured at night. Turn on **Classic brown colours** if you want them to follow TimeTheme.
+
 ## 1.0.3 — 2026-11-11
 
 ### 修复 / Fixed

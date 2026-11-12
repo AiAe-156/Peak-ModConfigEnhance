@@ -220,7 +220,8 @@ internal static class TimeThemeBridge
     /// </summary>
     internal static void TintSelectedGraphic(GameObject? selectedGraphic, bool dark)
     {
-        if (selectedGraphic == null || !Available)
+        // TimeTheme 不在场且是经典配色：底图从未被改过，无需处理。跟随游戏配色时白天要涂米色，与它无关
+        if (selectedGraphic == null || (!Available && ModConfigLook.Classic))
         {
             return;
         }
@@ -233,7 +234,7 @@ internal static class TimeThemeBridge
                 return;
             }
 
-            Color target = dark ? DarkSelectedFill : Color.white;
+            Color target = dark ? DarkSelectedFill : ModConfigLook.SelectedFill;
             Color current = image.color;
             if (!SameRgb(current, target))
             {

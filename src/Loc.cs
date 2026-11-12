@@ -166,6 +166,7 @@ internal static class Loc
     {
         new("Tree sidebar", "Tree sidebar", "树形侧栏", "樹形側欄"),
         new("Description panel", "Description panel", "选项说明面板", "選項說明面板"),
+        new("Classic brown colours", "Classic brown colours", "经典棕色配色", "經典棕色配色"),
         new("UI localization", "UI localization", "界面本地化", "介面本地化"),
         new("Hide localization buttons", "Hide localization buttons", "隐藏本地化相关按钮", "隱藏本地化相關按鈕"),
         new("Switch XUnity language with the language file", "Switch XUnity language with the language file", "语言文件同时切换 XUnity 的语言", "語言檔案同時切換 XUnity 的語言"),
@@ -175,6 +176,9 @@ internal static class Loc
         new(Plugin.DescTreeSidebar, Plugin.DescTreeSidebar,
             "模组列表改为左侧竖排侧栏，选中的模组在其下方展开分区，右侧显示选项。重启生效。",
             "模組列表改為左側直排側欄，選中的模組在其下方展開分區，右側顯示選項。重啟生效。"),
+        new(Plugin.DescClassicBrownMenu, Plugin.DescClassicBrownMenu,
+            "模组设置页跟随游戏设置菜单的配色（PEAK 3.1 起为深蓝）。打开后保持旧版的棕色外观。重启生效。",
+            "模組設定頁跟隨遊戲設定選單的配色（PEAK 3.1 起為深藍）。開啟後保持舊版的棕色外觀。重新啟動生效。"),
         new(Plugin.DescDescriptionPanel, Plugin.DescDescriptionPanel,
             "右上方面板显示悬停选项的说明、默认值与取值范围 / 可选项。需要树形侧栏。重启生效。",
             "右上方板面顯示懸停選項的說明、預設值與取值範圍 / 可選項。需要樹形側欄。重啟生效。"),

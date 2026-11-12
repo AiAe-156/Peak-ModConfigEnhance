@@ -1,6 +1,6 @@
 {
   "name": "ModConfigEnhance",
-  "version_number": "1.0.3",
+  "version_number": "1.0.4",
   "website_url": "https://github.com/AiAe-156/Peak-ModConfigEnhance",
   "description": "ModConfig settings page enhancements: tree sidebar, description panel, translation tools, language files.",
   "dependencies": [

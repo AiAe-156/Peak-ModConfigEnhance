@@ -21,7 +21,7 @@ public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "com.aiae.modconfigenhance";
     public const string PluginName = "ModConfig Enhance";
-    public const string PluginVersion = "1.0.3";
+    public const string PluginVersion = "1.0.4";
 
     /// <summary>完整版「游戏内模组管理器」（In-Game Mod Manager）。它自带同样的设置页增强，两者同开会重复改同一个页面：只提示，不拦截。</summary>
     internal const string InGameModManagerGuid = "com.aiae.ingamemodmanager";
@@ -39,6 +39,8 @@ public class Plugin : BaseUnityPlugin
 
     internal static ConfigEntry<bool> EnableTreeLayout = null!;
     internal static ConfigEntry<bool> EnableDescriptionPanel = null!;
+    internal static ConfigEntry<bool> ClassicBrownMenu = null!;
+    internal const string DescClassicBrownMenu = "The mod settings page follows the game's settings colours (dark blue since PEAK 3.1). Turn this on to keep the classic brown look of earlier versions. Restart to apply.";
     internal static ConfigEntry<bool> EnableLocalization = null!;
     internal static ConfigEntry<bool> HideLocalizationButtons = null!;
     internal static ConfigEntry<bool> SwitchXUnity = null!;
@@ -95,6 +97,7 @@ public class Plugin : BaseUnityPlugin
         const string secLayout = "1. Layout";
         EnableTreeLayout = Config.Bind(secLayout, "Tree sidebar", true, DescTreeSidebar);
         EnableDescriptionPanel = Config.Bind(secLayout, "Description panel", true, DescDescriptionPanel);
+        ClassicBrownMenu = Config.Bind(secLayout, "Classic brown colours", false, DescClassicBrownMenu);
 
         const string secLoc = "2. Localization";
         EnableLocalization = Config.Bind(secLoc, "UI localization", true, DescUiLocalization);

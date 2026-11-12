@@ -104,7 +104,7 @@ Directory: `BepInEx\config\ModConfigEnhance\language\`
 
 | Section | Contents |
 |---|---|
-| 1. Layout | Tree sidebar and description panel toggles (restart required) |
+| 1. Layout | Tree sidebar, description panel and classic brown colour toggles (restart required) |
 | 2. Localization | UI localization, hide localization buttons (instant), make XUnity follow the chosen language file, disable XUnity machine translation (**on by default** — see the note above) |
 | 3. State | Runtime state: language file, pins, export exclusions etc. (Hidden) |
 
@@ -221,7 +221,7 @@ XUnity AutoTranslator 保持出厂默认的 GoogleTranslateV2 端点时，会把
 
 | 分区 | 内容 |
 |---|---|
-| 1. Layout | 树形侧栏、说明面板开关（重启生效） |
+| 1. Layout | 树形侧栏、说明面板、经典棕色配色开关（重启生效） |
 | 2. Localization | 界面本地化、隐藏本地化相关按钮（即时生效）、XUnityAutoTranslate 跟随切换、禁用 XUnityAutoTranslate 机翻（**默认开**，见上方提醒） |
 | 3. State | 语言文件、置顶、导出排除等运行状态（Hidden） |
 
