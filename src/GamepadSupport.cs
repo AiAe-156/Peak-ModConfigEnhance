@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using PEAKLib.ModConfig;
@@ -111,8 +112,19 @@ internal static class GamepadSupport
     /// 只认明确的玩家操作件——陀螺仪 / 加速度计噪声不遍历 allControls 就不会进来。
     /// 同帧键鼠与手柄都有输入时键鼠优先（鼠标一动立刻退出手柄态，正是修复目标）。
     /// </summary>
-    private static void InputHandlerUpdatePostfix()
+    private static void InputHandlerUpdatePostfix() => TrackInput();
+
+    private static int _trackedFrame = -1;
+
+    /// <summary>
+    /// 实测修正（2026-11-16，用户：手柄操作日志窗口 / 分组管理仍看不到焦点框）：设备跟踪原来只挂在游戏 InputHandler.Update 上，
+    /// 那个 Update 在菜单里不一定每帧跑；跟踪停住时 IsGamepad 停在旧值（之前键鼠下焦点框消不掉、现在手柄下焦点框出不来，同一个根因）。
+    /// 现在另有一个常驻的 <see cref="InputTicker"/> 每帧调用；两边谁先到谁做，同一帧只做一次。
+    /// </summary>
+    internal static void TrackInput()
     {
+        if (_trackedFrame == Time.frameCount) return;
+        _trackedFrame = Time.frameCount;
         try
         {
             if (!_lastInputInited)
@@ -131,6 +143,8 @@ internal static class GamepadSupport
             {
                 _lastInputIsGamepad = true;
             }
+
+            FocusHighlight.Sync(); // 实测修正（2026-11-16）：焦点框跟着最后输入设备显示 / 收起
         }
         catch (Exception ex)
         {
@@ -475,10 +489,39 @@ internal static class GamepadSupport
     /// <summary>页面上方有 Modal / MenuWindow 打开时，选择归它们的容器管。</summary>
     private static bool Overlaid()
     {
-        return Modal.IsOpen || MenuWindow.AllActiveWindows.Count > 0;
+        return Modal.IsOpen || MenuWindow.AllActiveWindows.Count > 0 || ModConfigDropdownHost.AnyOpen;
     }
 
     // ── Harmony 补丁 ────────────────────────────────────────────────
+
+    private static bool _inputTrackingPatched;
+    /// <summary>
+    /// 最后输入设备跟踪 + 输入框「手柄按 A 才打字」闸门。设置页（<see cref="ApplyPatches"/>）和模组概览页
+    /// （OverviewController.Register）都要它；1.1.0：概览页不依赖树形侧栏开关，所以拆出来、重复调用只挂一次。
+    /// </summary>
+    internal static void EnsureInputTracking(Harmony harmony)
+    {
+        if (_inputTrackingPatched) return;
+        _inputTrackingPatched = true;
+        try
+        {
+            // 最后输入设备跟踪：PlayerInput 不自动切方案，动鼠标时方案仍停在 Gamepad（指针锁死根源），
+            // 每帧在 InputHandler.Update 后统计真实输入，IsGamepad 改查它。挂不上时 IsGamepad 退回原方案判定。
+            // 1.1.4 (user): any text box, with a controller: focus ≠ typing; A starts typing, B only stops typing.
+            MethodInfo? fieldSelect = AccessTools.Method(typeof(TMP_InputField), "OnSelect", new[] { typeof(BaseEventData) });
+            if (fieldSelect != null) harmony.Patch(fieldSelect, prefix: new HarmonyMethod(typeof(GamepadSupport), nameof(InputFieldSelectPrefix)));
+            MethodInfo? inputUpdate = AccessTools.Method(typeof(InputHandler), "Update", Type.EmptyTypes);
+            if (inputUpdate != null)
+                harmony.Patch(inputUpdate, postfix: new HarmonyMethod(typeof(GamepadSupport), nameof(InputHandlerUpdatePostfix)));
+            else
+                Plugin.Log.LogWarning("[手柄] 找不到 InputHandler.Update，最后输入设备跟踪未挂载。");
+            InputTicker.Ensure();
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.LogWarning($"[手柄] 输入设备跟踪挂载失败: {ex.Message}");
+        }
+    }
 
     /// <summary>挂在 TryApply 里：滑条误触门控 + 步进上限 + B 键分级返回。单个失败只警告。</summary>
     internal static void ApplyPatches(Harmony harmony)
@@ -533,17 +576,7 @@ internal static class GamepadSupport
                 harmony.Patch(capturePrompt, postfix: new HarmonyMethod(typeof(GamepadSupport), nameof(BindingCapturePromptPostfix)));
             }
 
-            // 最后输入设备跟踪：PlayerInput 不自动切方案，动鼠标时方案仍停在 Gamepad（指针锁死根源），
-            // 每帧在 InputHandler.Update 后统计真实输入，IsGamepad 改查它。挂不上时 IsGamepad 退回原方案判定。
-            MethodInfo? inputUpdate = AccessTools.Method(typeof(InputHandler), "Update", Type.EmptyTypes);
-            if (inputUpdate != null)
-            {
-                harmony.Patch(inputUpdate, postfix: new HarmonyMethod(typeof(GamepadSupport), nameof(InputHandlerUpdatePostfix)));
-            }
-            else
-            {
-                Plugin.Log.LogWarning("[手柄] 找不到 InputHandler.Update，最后输入设备跟踪未挂载。");
-            }
+            EnsureInputTracking(harmony);
         }
         catch (Exception ex)
         {
@@ -676,6 +709,23 @@ internal static class GamepadSupport
         return false;
     }
 
+    /// <summary>1.1.4：有的模组把上限设成 float.MaxValue（3.4e38，用户截图「自动保存间隔」），按 0.5% 一步就直接到顶、
+    /// 滑块位置也算不出来。有效区间取「默认值 / 当前值的 4 倍、至少 100」与真实上限中较小的一个。</summary>
+    internal static float EffectiveRange(Slider slider)
+    {
+        float range = slider.maxValue - slider.minValue;
+        if (range <= 0f || range < 1e6f) return range;
+        float anchor = Mathf.Max(Mathf.Abs(slider.value - slider.minValue), 25f);
+        return Mathf.Min(range, Mathf.Max(100f, anchor * 4f));
+    }
+    /// <summary>A round step (0.01 / 0.05 / 0.1 / 0.5 / 1 / 5 …) close to 0.5% of the range.</summary>
+    internal static float StepFor(float range)
+    {
+        float raw = range * 0.005f;
+        float power = Mathf.Pow(10f, Mathf.Floor(Mathf.Log10(Mathf.Max(raw, 1e-6f))));
+        float scaled = raw / power;
+        return (scaled < 2f ? 1f : scaled < 5f ? 2f : 5f) * power;
+    }
     /// <summary>步进上限：最多区间的 0.5%（原版 0.1，0-10000 的滑条一步 1000）。整数档最少 1 步。</summary>
     private static void SliderStepSizePostfix(Slider __instance, ref float __result)
     {
@@ -684,7 +734,7 @@ internal static class GamepadSupport
             return;
         }
 
-        float range = __instance.maxValue - __instance.minValue;
+        float range = EffectiveRange(__instance);
         if (range <= 0f)
         {
             return;
@@ -709,10 +759,18 @@ internal static class GamepadSupport
             return true;
         }
 
+        if (ConsumeTypingBack()) { __result = (__instance, NoopTransistion.Shared); return false; } // B only left a text box
         PanelFocus? focus = __instance.GetComponent<PanelFocus>();
-        if (focus == null || !focus.ConsumeBack())
+        if (focus == null)
         {
             return true;
+        }
+
+        if (!focus.ConsumeBack())
+        {
+            if (BackGuard.Allow()) return true; // 1.1.5: B twice quickly to leave the mod settings page
+            __result = (__instance, NoopTransistion.Shared);
+            return false;
         }
 
         __result = (__instance, NoopTransistion.Shared);
@@ -758,6 +816,7 @@ internal static class GamepadSupport
 
         private void OnDisable()
         {
+            GamepadIntent.Release(this);
             InOptions = false;
             _lastSidebar = null;
             _lastOptions = null;
@@ -768,17 +827,34 @@ internal static class GamepadSupport
         {
             if (!IsGamepad || Menu == null || Page == null)
             {
+                GamepadIntent.Release(this);
                 return;
             }
 
             if (_handler == null || _handler.currentPage != Page || !Page.gameObject.activeInHierarchy)
             {
+                GamepadIntent.Release(this);
                 return;
             }
 
-            if (Overlaid() || CaptureActive() || AnyDropdownOpen(Page.transform))
+            if (Overlaid() || CaptureActive() || AnyDropdownOpen(Page.transform) || TypingGuard.Active)
             {
+                GamepadIntent.Release(this);
                 return;
+            }
+
+            // 1.1.0：右摇杆只滚动右栏（游戏把右摇杆也绑在导航上，推动期间暂停导航，焦点不动）。
+            // Unity 对象不能用 ?. 判空（已销毁的对象 ?. 不拦截，GetComponent 直接抛）——1.1.0 首版这里每帧抛 NRE，
+            // 整个状态机后半段都不执行，右栏进去后什么都操作不了。
+            GameObject? current = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            SliderGate? gate = current != null ? current.GetComponent<SliderGate>() : null;
+            bool sliderEngaged = gate != null && gate.Engaged;
+            float stick = sliderEngaged ? 0 : GamepadIntent.ScrollY;
+            GamepadIntent.HoldNavigation(this, !sliderEngaged && GamepadIntent.RightStickHeld);
+            if (stick != 0 && Menu.Content != null && Menu.Content.GetComponentInParent<ScrollRect>() is ScrollRect options && options.content != null && options.viewport != null)
+            {
+                float range = options.content.rect.height - options.viewport.rect.height;
+                if (range > 1) { options.StopMovement(); options.verticalNormalizedPosition = Mathf.Clamp01(options.verticalNormalizedPosition + stick * GamepadIntent.ScrollSpeed(900) * Time.unscaledDeltaTime / range); }
             }
 
             EventSystem? system = EventSystem.current;
@@ -987,6 +1063,19 @@ internal static class GamepadSupport
             return null;
         }
 
+        /// <summary>The row's value control (slider, dropdown, text box, toggle, key box), never Default / Clear / Save.</summary>
+        internal static GameObject? ValueControl(SettingsUICell cell)
+        {
+            if (cell == null || cell.m_settingsContentParent == null) return null;
+            foreach (Selectable control in cell.m_settingsContentParent.GetComponentsInChildren<Selectable>(false))
+            {
+                if (control is Scrollbar || !control.IsInteractable()) continue;
+                if (control.GetComponent<PeakMenuButton>() != null || control.name.StartsWith("MCE_", StringComparison.Ordinal)) continue;
+                if (control.GetComponentInParent<TMP_Dropdown>() is TMP_Dropdown parent && parent != control) continue;
+                return control.gameObject;
+            }
+            return null;
+        }
         private GameObject? FirstCellSelectable()
         {
             if (Menu == null)
@@ -1001,7 +1090,9 @@ internal static class GamepadSupport
                     continue;
                 }
 
-                GameObject? selectable = cell.GetSelectable();
+                // 1.1.4 (user: entering the right panel focused "Default", one press reset the value): the game's
+                // GetSelectable returns the first Button, which in a ModConfig row is Default. Prefer the value control.
+                GameObject? selectable = ValueControl(cell) ?? cell.GetSelectable();
                 if (selectable == null || !selectable.activeInHierarchy)
                 {
                     continue;
@@ -1181,6 +1272,10 @@ internal static class GamepadSupport
 
             // 4. 赋链：格内上下 = 同列堆叠项（默认↔清空）；出格到相邻行的同列/最近列；左右 = 同行相邻格
             Selectable? searchField = Sidebar ? FindSearchField() : null;
+            if (Sidebar && lines[0].Groups.Count > 0)
+            {
+                LinkHeader(lines[0].Groups[0].Items[0]);
+            }
             for (int i = 0; i < lines.Count; i++)
             {
                 Line line = lines[i];
@@ -1280,6 +1375,84 @@ internal static class GamepadSupport
             }
 
             return items.Count > 0 ? items : null;
+        }
+
+        private List<Selectable> _header = new List<Selectable>();
+        private float _headerAt = -10f;
+        private static readonly Vector3[] HeaderCorners = new Vector3[4];
+
+        /// <summary>
+        /// 实测修正（2026-11-16，用户：设置页「搜索」框把手柄焦点抓死，移不出去）：页头的控件（返回、搜索框、主题钮、
+        /// 导出翻译 / 补漏翻 / 仅导出已选、筛选下拉……）原来没人连导航——ModConfig 的搜索框导航不通，侧栏顶行按上进了搜索框就出不来。
+        /// 现在页头所有控件（不在任何滚动区里的）按位置互连：左右走同一排，上下走相邻一排里最近的；最下一排再按下 = 侧栏第一项。
+        /// 页头控件每 0.5 秒重收一次（避免每帧遍历整页）。
+        /// </summary>
+        private void LinkHeader(Selectable firstSidebar)
+        {
+            if (Page == null) return;
+            if (Time.unscaledTime - _headerAt > 0.5f)
+            {
+                _headerAt = Time.unscaledTime;
+                _header = Page.GetComponentsInChildren<Selectable>(false)
+                    .Where(s => s is not Scrollbar && s.GetComponentInParent<ScrollRect>() == null
+                        && (s is TMP_Dropdown || s.GetComponentInParent<TMP_Dropdown>() == null))
+                    .ToList();
+                // 页头控件凡是还没焦点框的一并补上（主题钮、排序 / 语言下拉、刷新、分组管理等，免得逐个漏）
+                foreach (Selectable s in _header)
+                {
+                    if (s.GetComponent<FocusHighlight>() == null) MarkSelectable(s.gameObject, null, null);
+                }
+            }
+
+            List<(Selectable S, Vector2 C, float H)> items = new List<(Selectable, Vector2, float)>();
+            foreach (Selectable s in _header)
+            {
+                if (s == null || !s.gameObject.activeInHierarchy || !s.IsInteractable()) continue;
+                ((RectTransform)s.transform).GetWorldCorners(HeaderCorners);
+                items.Add((s, (HeaderCorners[0] + HeaderCorners[2]) / 2f, Mathf.Abs(HeaderCorners[2].y - HeaderCorners[0].y)));
+            }
+
+            foreach (var item in items)
+            {
+                Selectable? Pick(int dx, int dy)
+                {
+                    Selectable? best = null;
+                    float bestScore = float.MaxValue;
+                    foreach (var other in items)
+                    {
+                        if (other.S == item.S) continue;
+                        float ox = other.C.x - item.C.x, oy = other.C.y - item.C.y;
+                        bool sameRow = Mathf.Abs(oy) < Mathf.Max(item.H, other.H) * 0.5f;
+                        float score;
+                        if (dx != 0)
+                        {
+                            if (!sameRow || ox * dx <= 0) continue;
+                            score = Mathf.Abs(ox);
+                        }
+                        else
+                        {
+                            if (sameRow || oy * dy <= 0) continue;
+                            score = Mathf.Abs(oy) + Mathf.Abs(ox) * 0.5f;
+                        }
+
+                        if (score < bestScore)
+                        {
+                            bestScore = score;
+                            best = other.S;
+                        }
+                    }
+
+                    return best;
+                }
+
+                Navigation nav = item.S.navigation;
+                nav.mode = Navigation.Mode.Explicit;
+                nav.selectOnLeft = Pick(-1, 0);
+                nav.selectOnRight = Pick(1, 0);
+                nav.selectOnUp = Pick(0, 1);
+                nav.selectOnDown = Pick(0, -1) ?? firstSidebar;
+                item.S.navigation = nav;
+            }
         }
 
         private Selectable? FindSearchField()
@@ -1384,6 +1557,27 @@ internal static class GamepadSupport
         }
     }
 
+    /// <summary>常驻的每帧钩子：不依赖游戏 InputHandler 是否在跑，保证设备跟踪与焦点框同步每帧都做（见 <see cref="TrackInput"/>）。</summary>
+    internal sealed class InputTicker : MonoBehaviour
+    {
+        private static InputTicker? _instance;
+
+        internal static void Ensure()
+        {
+            if (_instance != null) return;
+            GameObject go = new GameObject("MCE_InputTicker");
+            go.hideFlags = HideFlags.HideAndDontSave;
+            DontDestroyOnLoad(go);
+            _instance = go.AddComponent<InputTicker>();
+        }
+
+        private void Update()
+        {
+            // 跟踪只读输入状态；焦点框同步放在 TrackInput 末尾，同帧只做一次。
+            TrackInput();
+        }
+    }
+
     // ── 焦点框 ────────────────────────────────────────────────────
 
     /// <summary>
@@ -1399,21 +1593,80 @@ internal static class GamepadSupport
         private GameObject? _frame;
         private bool _engaged;
 
+        /// <summary>
+        /// 1.1.0 实测修正（用户 2026-11-16：键鼠打开日志窗口 / 分组管理后手柄焦点框一直在、消不掉）：原来只在被选中那一刻看输入设备，
+        /// 之后切键鼠不收、切手柄也不补；而弹窗打开时（PublicationNavigation、下拉层等）会直接选中第一个控件。
+        /// 现在记下当前被选中的那一个，每帧（<see cref="InputHandlerUpdatePostfix"/>）按「最后输入设备」重算：
+        /// 键鼠态一律不画，手柄真的有输入时才画；切回键鼠立即收起。
+        /// </summary>
+        private static FocusHighlight? _current;
+
         public void OnSelect(BaseEventData eventData)
         {
-            SetVisible(true);
+            _current = this;
+            // 1.1.0：鼠标点击选中不画焦点框（概览行内格子现在也挂了焦点框，鼠标行为要保持原样）；之后手柄一动由 Sync 补上。
+            SetVisible(eventData is not PointerEventData && IsGamepad);
         }
 
         public void OnDeselect(BaseEventData eventData)
         {
+            if (_current == this) _current = null;
             SetVisible(false);
             _engaged = false;
         }
 
         private void OnDisable()
         {
+            if (_current == this) _current = null;
             SetVisible(false);
             _engaged = false;
+        }
+
+        /// <summary>每帧调用一次：当前选中项的焦点框只在手柄态显示。只看一个对象，不遍历。</summary>
+        internal static void Sync()
+        {
+            // 实测修正（2026-11-16 二次）：不再只靠 OnSelect 记下「当前」——弹窗先选中控件、下一帧才给它挂焦点框时，
+            // OnSelect 早就错过了，焦点框永远不出来。现在每帧直接看 EventSystem 当前选中的对象。
+            EventSystem? system = EventSystem.current;
+            GameObject? selected = system == null ? null : system.currentSelectedGameObject;
+
+            FocusHighlight? current = _current;
+            if (current is not null && (current == null || current.gameObject != selected))
+            {
+                if (current != null) current.SetVisible(false);
+                _current = null;
+                current = null;
+            }
+
+            if (selected == null)
+            {
+                _probed = null;
+                return;
+            }
+
+            if (current is null)
+            {
+                if (_probed == selected) return; // 这个对象已经查过、没有焦点框
+                current = selected.GetComponent<FocusHighlight>();
+                if (current == null)
+                {
+                    _probed = selected;
+                    return;
+                }
+
+                _current = current;
+            }
+
+            _probed = null;
+            current.SetVisible(IsGamepad);
+        }
+
+        private static GameObject? _probed;
+
+        // 已选中的对象后来才挂上焦点框（PublicationNavigation 下一帧才 MarkSelectable）：让 Sync 重新认它。
+        private void Awake()
+        {
+            if (_probed == gameObject) _probed = null;
         }
 
         internal void SetEngaged(bool engaged)
@@ -1462,6 +1715,23 @@ internal static class GamepadSupport
             image.pixelsPerUnitMultiplier = 1.2f; // 屏上描边 ≈ 2.5px、圆角 ≈ 10px
             image.color = ModConfigSidebarWidgets.Cream;
             image.raycastTarget = false;
+
+            // 1.1.1：米白框套在米白输入框/下拉上看不出来（用户截图）。外面再套一圈深色描边，
+            // 浅底上看深圈、深底上看米白圈，任何底色都分得清。
+            GameObject dark = new GameObject("MCE_FocusFrameShadow", typeof(RectTransform), typeof(Image));
+            RectTransform darkRect = (RectTransform)dark.transform;
+            darkRect.SetParent(rect, false);
+            darkRect.anchorMin = Vector2.zero;
+            darkRect.anchorMax = Vector2.one;
+            darkRect.offsetMin = new Vector2(-2.5f, -2.5f);
+            darkRect.offsetMax = new Vector2(2.5f, 2.5f);
+            Image darkImage = dark.GetComponent<Image>();
+            darkImage.sprite = RingSprite();
+            darkImage.type = Image.Type.Sliced;
+            darkImage.pixelsPerUnitMultiplier = 1.2f;
+            darkImage.color = new Color(0.08f, 0.10f, 0.14f, 0.95f);
+            darkImage.raycastTarget = false;
+            darkRect.SetAsFirstSibling();
 
             go.SetActive(false);
             return go;
@@ -1570,19 +1840,55 @@ internal static class GamepadSupport
     /// （MarkSelectable 里关）；A 键走 TMP 自己的 OnSubmit → m_ShouldActivateNextUpdate 激活，
     /// B 键走 PanelFocus.ConsumeBack → DeactivateInputField。
     /// </summary>
-    internal sealed class InputFieldGate : MonoBehaviour
+    /// <summary>Before TMP activates a box on selection: with a controller it must wait for A.</summary>
+    private static void InputFieldSelectPrefix(TMP_InputField __instance)
+    {
+        if (!IsGamepad || __instance == null) return;
+        __instance.shouldActivateOnSelect = false;
+        if (__instance.GetComponent<InputFieldGate>() == null) __instance.gameObject.AddComponent<InputFieldGate>();
+    }
+    /// <summary>Frame until which a back request (B) is swallowed because it only left a text box.</summary>
+    internal static int SwallowBackUntil = -1;
+    internal static bool BackSwallowed => Time.frameCount <= SwallowBackUntil;
+    /// <summary>For every back entry point: if a text box is being typed in (any input device), leave typing and
+    /// swallow this back request. Independent of which runs first, the gate's Update or the page's back.</summary>
+    internal static bool ConsumeTypingBack()
+    {
+        if (BackSwallowed) return true;
+        var selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        var field = selected != null ? selected.GetComponent<TMP_InputField>() : null;
+        if (field == null || !field.isFocused || !IsGamepad) return false;
+        field.DeactivateInputField(); SwallowBackUntil = Time.frameCount + 1; return true;
+    }
+
+    internal sealed class InputFieldGate : MonoBehaviour, ISubmitHandler
     {
         private TMP_InputField? _input;
         private FocusHighlight? _highlight;
         private bool _engaged;
+        private int _steamFrames;
 
         private void Awake()
         {
             _input = GetComponent<TMP_InputField>();
         }
 
+        /// <summary>1.1.0：Steam 大屏幕 / Deck 下按 A 弹 Steam 屏幕键盘，TMP 自己的激活在下一帧撤掉。</summary>
+        public void OnSubmit(BaseEventData eventData)
+        {
+            if (_input == null || !IsGamepad || _input.readOnly || !_input.interactable) return;
+            if (GamepadIntent.TrySteamKeyboard(_input)) _steamFrames = 3;
+        }
+
         private void Update()
         {
+            if (_steamFrames > 0) { _steamFrames--; if (_input != null && _input.isFocused) _input.DeactivateInputField(); }
+            // B while typing: leave typing only; the page must not go back on the same press.
+            if (_input != null && _input.isFocused && IsGamepad && Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)
+            {
+                _input.DeactivateInputField(); SwallowBackUntil = Time.frameCount + 1;
+                if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(gameObject);
+            }
             bool focused = _input != null && _input.isFocused;
             if (focused == _engaged)
             {
@@ -1740,17 +2046,19 @@ internal static class GamepadSupport
 
         private void Step(int dir)
         {
-            float range = _slider!.maxValue - _slider.minValue;
+            float range = EffectiveRange(_slider!);
             if (range <= 0f)
             {
                 return;
             }
 
-            bool reversed = _slider.direction is Slider.Direction.RightToLeft or Slider.Direction.TopToBottom;
+            bool reversed = _slider!.direction is Slider.Direction.RightToLeft or Slider.Direction.TopToBottom;
             float step = _slider.wholeNumbers
                 ? Mathf.Max(1f, Mathf.Round(range * 0.005f))
-                : Mathf.Min(range * 0.1f, range * 0.005f);
-            _slider.value = Mathf.Clamp(_slider.value + step * dir * (reversed ? -1 : 1), _slider.minValue, _slider.maxValue);
+                : StepFor(range);
+            float max = _slider.minValue + range; // never jump into the absurd part of a 0..float.MaxValue slider
+            float next = Mathf.Clamp(_slider.value + step * dir * (reversed ? -1 : 1), _slider.minValue, Mathf.Max(max, _slider.value));
+            _slider.value = next;
         }
     }
 

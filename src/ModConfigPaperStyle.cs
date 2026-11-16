@@ -32,12 +32,14 @@ internal static class ModConfigPaperStyle
 
     internal static void Resolve(Transform page)
     {
-        if (_resolved)
+        if (_resolved && _sprite != null && WobblyMaterial != null)
         {
             return;
         }
 
-        _resolved = true;
+        // The pause-menu entry can be built before the settings page and its animated material.
+        // Retry on later page entries rather than permanently caching that early fallback.
+        _resolved = false;
         try
         {
             string source = "";
@@ -76,6 +78,8 @@ internal static class ModConfigPaperStyle
                 _material = wobbly;
             }
 
+            _resolved = WobblyMaterial != null;
+
             Plugin.Log.LogInfo($"[面板布局] 纸面样式来源：{source} / {image.name}，sprite {_sprite.name}（{_type}，倍率 {_ppu:0.##}），材质 {(_material != null ? _material.name + "/" + (_material.shader != null ? _material.shader.name : "?") : "null")}{(WobblyMaterial != null ? "（会抖）" : "（不抖）")}。");
         }
         catch (Exception ex)
@@ -88,7 +92,6 @@ internal static class ModConfigPaperStyle
     /// <summary>从搜索框、筛选下拉框、返回按钮的底图里找 Scouts/UI 着色器的材质，优先名字正好叫「UI」的。</summary>
     private static Material? FindWobblyMaterial(Transform page)
     {
-        Material? fallback = null;
         foreach (Image candidate in Candidates(page))
         {
             Material? material = candidate != null ? candidate.material : null;
@@ -97,16 +100,21 @@ internal static class ModConfigPaperStyle
                 continue;
             }
 
-            if (material.name == "UI")
+            if (IsWobbly(material))
             {
                 return material;
             }
 
-            fallback ??= material;
         }
 
-        return fallback;
+        // Original settings UI resources may already be loaded without an active settings page.
+        foreach (Material material in Resources.FindObjectsOfTypeAll<Material>())
+            if (IsWobbly(material)) return material;
+        return null;
     }
+
+    private static bool IsWobbly(Material? material) => material != null && material.shader != null &&
+        material.shader.name == WobblyShader && (material.name == "UI" || material.name == "UI (Instance)");
 
     private static System.Collections.Generic.IEnumerable<Image> Candidates(Transform page)
     {
@@ -185,7 +193,7 @@ internal static class ModConfigPaperStyle
 
     /// <summary>会抖的那份材质（Scouts/UI 的「UI」）；没解析到就 null。</summary>
     internal static Material? WobblyMaterial =>
-        _material != null && _material.shader != null && _material.shader.name == WobblyShader ? _material : null;
+        IsWobbly(_material) ? _material : null;
 
     /// <summary>只换材质不换 sprite：✓ 细条、置顶竖条、滚动条这些自绘圆角图形也一起抖。</summary>
     internal static void ApplyWobble(Image image)

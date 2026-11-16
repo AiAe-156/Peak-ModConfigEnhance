@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using PEAKLib.ModConfig;
 using PEAKLib.ModConfig.Components;
 using PEAKLib.UI;
@@ -21,14 +22,14 @@ namespace ModConfigEnhance;
 ///   · 列表右侧的竖向滚动条：细、圆角，深棕轨道 + 米白滑块，内容装得下时自动隐藏；
 ///   · 圆角来自运行时画的一张 32×32 圆角 sprite（九宫格），不依赖游戏资源；
 ///   · 列表上方的工具行：导出翻译 / 查漏翻 / 「仅导出已选」开关；
-///   · 列表首行的表头：两列复选框的标题（导出 / 置顶）+ 右侧的「只显示快捷键选项」开关；
+///   · 列表首行的表头：两列复选框的标题（导出 / 置顶）+ 右侧的「跳转到快捷键设置页」（1.1.0 取代「只显示快捷键选项」开关）；
 ///   · 每个模组行左侧的两列复选框：导出列（只在「仅导出已选」勾上时显示）、置顶列（勾上的行排到列表最上面）。
-/// 颜色全部取自 TimeTheme 配色表里已有的那几格（米白 ↔ 夜间紫、页签棕 ↔ 黑），
-/// 于是 <see cref="TimeThemeBridge.ApplyTheme"/> 扫一遍就自动跟昼夜，不用另写夜间分支；没装 TimeTheme 就是原版米白。
+/// 颜色全部取自 <see cref="ModConfigLook"/> 登记的主题格（底色、米白），主题切换时由
+/// <see cref="ModConfigLook.ApplyMain"/> 扫一遍换色；不在登记表里的颜色（✓、行名金色、「默认」钮）由 <see cref="ThemeTint"/> 自己切。
 /// 置顶集合、不导出集合、「仅导出已选」开关存在本模组 cfg 里（带 Hidden 标签，ModConfig 界面不显示），
 /// 键是 ModConfig 给模组行的名字（它的 FixNaming 结果），与导出文件里的模组名一致。
 /// </summary>
-internal static class ModConfigSidebarWidgets
+internal static partial class ModConfigSidebarWidgets
 {
     internal const float CheckBoxSize = 22f;
     internal const float ColumnWidth = 30f;
@@ -81,8 +82,8 @@ internal static class ModConfigSidebarWidgets
     private const float ToolbarGap = 6f;
     private const float ToolbarButtonWidth = 92f;
 
-    /// <summary>TimeTheme 主表第 19 组的白天色（米白 #DFDAC2），夜间对应紫 (0.65,0.38,0.75)。</summary>
-    internal static readonly Color Cream = new Color(0.8745098f, 0.854902f, 0.7607843f, 1f);
+    /// <summary>米白（#DFDAC2）：当前主题的同一格见 <see cref="ModConfigLook.Cream"/>，建元素时用那个。</summary>
+    internal static Color Cream => ModConfigLook.Cream;
     private const float UncheckedBorderAlpha = 0.45f;
 
     /// <summary>✓ 与置顶竖条的颜色：白天低饱和天蓝，夜间深一档的蓝（用户定）。</summary>
@@ -96,7 +97,7 @@ internal static class ModConfigSidebarWidgets
     private const string PinKey = "MCE_PIN";
     private const string ExportColumnKey = "MCE_EXPORT_COL";
     private const string ExportSelectedKey = "MCE_EXPORT_SELECTED";
-    private const string KeysOnlyKey = "MCE_KEYS_ONLY";
+    private const string JumpHotkeysKey = "MCE_JUMP_HOTKEYS";
 
     private static Sprite? _roundedSprite;
 
@@ -257,7 +258,7 @@ internal static class ModConfigSidebarWidgets
         return image;
     }
 
-    /// <summary>不在 TimeTheme 表里的颜色自己按昼夜切（✓、置顶竖条）。IsDark 每帧有缓存，Update 很便宜。</summary>
+    /// <summary>不在主题登记表里的颜色自己按主题切（✓、行名金色、「默认」钮）。IsDark 每帧有缓存，Update 很便宜。</summary>
     internal sealed class ThemeTint : MonoBehaviour
     {
         internal Graphic? Target;
@@ -272,7 +273,7 @@ internal static class ModConfigSidebarWidgets
 
         private void Update()
         {
-            bool dark = TimeThemeBridge.IsDark;
+            bool dark = ModConfigLook.IsDark;
             if (_dark == dark || Target == null)
             {
                 return;
@@ -318,7 +319,7 @@ internal static class ModConfigSidebarWidgets
             }
 
             bool selected = Button != null && Button.Selected;
-            bool dark = TimeThemeBridge.IsDark;
+            bool dark = ModConfigLook.IsDark;
             Color target = selected ? (dark ? NightSelected : Selected) : (dark ? Night : Day);
             if (Text.color != target)
             {
@@ -544,10 +545,11 @@ internal static class ModConfigSidebarWidgets
     }
 
     /// <summary>
-    /// 三格等分 300 宽：导出翻译（蓝）、查漏翻（绿；没装 XUnity 灰）、「仅导出已选」开关（页签棕底 + 复选框）。
+    /// 三格等分 300 宽：导出翻译（蓝）、查漏翻（绿）、「仅导出已选」开关（页签棕底 + 复选框）。
     /// 前两排建在 Collapsible 容器里、语言行在自己的容器里，容器内一律 0 起相对坐标。
     /// </summary>
-    internal static ToolbarRefs MakeToolbar(RectTransform page, float left, float width, float top, Action<bool> exportSelectedChanged)
+    /// <remarks>1.1.0（概览页第 8a 章，照 IGMM）：<paramref name="openGroups"/> 非空时第三行多一个「分组管理」方形钮。</remarks>
+    internal static ToolbarRefs MakeToolbar(RectTransform page, float left, float width, float top, Action<bool> exportSelectedChanged, Action? openGroups = null)
     {
         EnsureTerms();
         ToolbarRefs refs = new ToolbarRefs();
@@ -596,10 +598,10 @@ internal static class ModConfigSidebarWidgets
         row.AddComponent<TipTarget>().Key = "TIP_SELECTED_ONLY";
         GamepadSupport.MarkSelectable(row, null, null); // 不在滚动区：只要焦点框
 
-        // 第二行：XUnity 的「显示原文 / 译文」「重载翻译」+「打开目录」
+        // 第二行：「显示原文 / 译文」「重载翻译」+「打开目录」
         ModConfigTranslationExport.MakeXUnityButtons(collapsible, 0f, ToolbarHeight + ToolbarRowGap, width, ToolbarHeight, ToolbarGap);
         // 第三行：语言文件下拉 + 刷新（独立容器，隐藏前两排时整体移到第一排的位置）
-        refs.LanguageRow = MakeLanguageRow(page, left, top + (ToolbarHeight + ToolbarRowGap) * 2f, width, ToolbarHeight, ToolbarGap);
+        refs.LanguageRow = MakeLanguageRow(page, left, top + (ToolbarHeight + ToolbarRowGap) * 2f, width, ToolbarHeight, ToolbarGap, openGroups);
         refs.ExportSelectedBox = box;
         return refs;
     }
@@ -609,18 +611,20 @@ internal static class ModConfigSidebarWidgets
     private static readonly Color RefreshColor = new Color(0.185f, 0.394f, 0.6226f);
 
     /// <summary>
-    /// 第三行：排序下拉 + 语言下拉（等分剩余宽度）+ 方形刷新图标钮（一个行高见方），间隙 8。
+    /// 第三行：排序下拉 + 语言下拉（等分剩余宽度）+ 方形刷新图标钮 + 方形分组管理钮（各一个行高见方），间隙 8。
+    /// 1.1.0（概览页第 8a 章）：分组管理钮照 IGMM 加回；IGMM 同排的「清除更新提示」钮（变动账本）不搬。
     /// 语言下拉第一项「跟随游戏语言」，其后是 language 目录下的语言组（显示名取首行 // display: 或文件名），
     /// 选中即应用、全页面实时刷新，出错在说明面板用警告色提示；「刷新」重扫目录，新建的文件点一下就能选。
     /// 刷新钮换掉蓝缎带样式：纸面底（白天米白、夜里与下拉同深纸面）+ 金色 ↻ 图标。
     /// 整行装进独立容器并返回：隐藏前两排时整容器上移到第一排的位置。
     /// </summary>
-    private static RectTransform MakeLanguageRow(RectTransform page, float left, float top, float width, float height, float gap)
+    private static RectTransform MakeLanguageRow(RectTransform page, float left, float top, float width, float height, float gap, Action? openGroups)
     {
         RectTransform row = MakeRowContainer(page, "MCE_LanguageRow", left, top, width, height);
         const float rowGap = 8f;
         float refreshWidth = height;
-        float dropdownWidth = (width - refreshWidth - rowGap * 2f) / 2f;
+        int squares = openGroups != null ? 2 : 1;
+        float dropdownWidth = (width - refreshWidth * squares - rowGap * (squares + 1)) / 2f;
 
         PeakDropdown sort = MakeStyledDropdown(row, "MCE_Sort", 0f, dropdownWidth, height);
         SortDropdown sortController = sort.gameObject.AddComponent<SortDropdown>();
@@ -641,44 +645,61 @@ internal static class ModConfigSidebarWidgets
             controller.Rescan(notify: true);
             spinner?.Kick();
         });
-        // 方形图标钮：文字关掉、缎带虚线边藏起来、底图换纸面。
-        // 注意根对象上没有 Image，真正的底图是 Button.targetGraphic（之前改色没生效就是改错了对象）。
-        refresh.Text.gameObject.SetActive(false);
-        if (refresh.BorderTop != null)
+        spinner = StyleSquareIconButton(refresh, RefreshIconSprite(), height).AddComponent<RefreshSpin>();
+        refresh.gameObject.AddComponent<TipTarget>().Key = "TIP_REFRESH";
+
+        if (openGroups != null)
         {
-            refresh.BorderTop.gameObject.SetActive(false);
+            PeakMenuButton groups = ModConfigTranslationExport.MakeButton(row, "MCE_GroupManager", "BTN_GROUPS", RefreshColor, dropdownWidth * 2f + rowGap * 3f + refreshWidth, 0f, refreshWidth, height, openGroups);
+            StyleSquareIconButton(groups, GroupIconSprite(), height);
+            groups.gameObject.AddComponent<TipTarget>().Key = "TIP_GROUPS";
         }
 
-        if (refresh.BorderBottom != null)
+        return row;
+    }
+
+    /// <summary>
+    /// 缎带钮改成方形图标钮：文字关掉、缎带虚线边藏起来、底图换纸面，中间放金色图标；返回图标对象。
+    /// 注意根对象上没有 Image，真正的底图是 Button.targetGraphic（之前改色没生效就是改错了对象）。
+    /// </summary>
+    private static GameObject StyleSquareIconButton(PeakMenuButton button, Sprite sprite, float height)
+    {
+        button.Text.gameObject.SetActive(false);
+        if (button.BorderTop != null)
         {
-            refresh.BorderBottom.gameObject.SetActive(false);
+            button.BorderTop.gameObject.SetActive(false);
         }
 
-        Button? refreshButton = refresh.Button;
-        Image? refreshBackground = refreshButton != null ? refreshButton.targetGraphic as Image : null;
-        if (refreshBackground != null)
+        if (button.BorderBottom != null)
+        {
+            button.BorderBottom.gameObject.SetActive(false);
+        }
+
+        Button? uiButton = button.Button;
+        Image? background = uiButton != null ? uiButton.targetGraphic as Image : null;
+        if (background != null)
         {
             // 底图还挂着缎带模板的原尺寸（比行高出一截），拉回贴满按钮
-            RectTransform bgRect = refreshBackground.rectTransform;
+            RectTransform bgRect = background.rectTransform;
             bgRect.anchorMin = Vector2.zero;
             bgRect.anchorMax = Vector2.one;
             bgRect.offsetMin = Vector2.zero;
             bgRect.offsetMax = Vector2.zero;
-            ModConfigPaperStyle.Apply(refreshBackground, 8f);
+            ModConfigPaperStyle.Apply(background, 8f);
             // 白天米白纸面、夜里跟下拉一样深纸面；图标金色在两个底上都压得住
-            Tint(refreshBackground, Cream, ModConfigTreeLayoutPatch.TabBackground);
+            Tint(background, ModConfigLook.CreamOf(false), ModConfigLook.BoxOf(true));
             // 不能用 ColorTint：ThemeTint 每帧断言底色会把变色盖回去。模板本来就是 Animation 过渡，
             // 由根的 Animator 驱动放大动画、顺带开关 SFX Hover/Click 子对象播音效——改底色不冲突。
-            if (refreshButton != null)
+            if (uiButton != null)
             {
-                refreshButton.transition = Selectable.Transition.Animation;
+                uiButton.transition = Selectable.Transition.Animation;
             }
         }
 
         // Pressed 动画会翻出模板的 Glow 辉光（缎带上是装饰，方钮上看着像漏斗）——方钮用不上，建钮时销毁；
         // Panel 底、Border 虚线、Text、SFX 子对象保留（模板子对象：Shadow Panel Border Border Glow Text SFX Appear/Hover/Click）。
         List<GameObject> ornaments = new List<GameObject>();
-        foreach (Transform child in refresh.transform)
+        foreach (Transform child in button.transform)
         {
             if (child.name == "Glow")
             {
@@ -693,21 +714,19 @@ internal static class ModConfigSidebarWidgets
 
         GameObject icon = new GameObject("Icon", typeof(RectTransform), typeof(Image));
         RectTransform iconRect = (RectTransform)icon.transform;
-        iconRect.SetParent(refresh.transform, false);
+        iconRect.SetParent(button.transform, false);
         iconRect.anchorMin = new Vector2(0.5f, 0.5f);
         iconRect.anchorMax = new Vector2(0.5f, 0.5f);
         iconRect.pivot = new Vector2(0.5f, 0.5f);
-        iconRect.sizeDelta = new Vector2(height - 14f, height - 14f);
+        // 2.4.1：三个方钮的图标统一占 60% 见方（原先 height-14，加上各自 sprite 留白不同，刷新图标明显偏小）
+        iconRect.sizeDelta = new Vector2(Mathf.Round(height * IconBoxRatio), Mathf.Round(height * IconBoxRatio));
         iconRect.anchoredPosition = Vector2.zero;
         Image iconImage = icon.GetComponent<Image>();
-        iconImage.sprite = RefreshIconSprite();
+        iconImage.sprite = sprite;
         iconImage.color = SelfRowTint.Selected;
         iconImage.raycastTarget = false;
         Tint(iconImage, SelfRowTint.Selected, SelfRowTint.NightSelected);
-        spinner = icon.AddComponent<RefreshSpin>();
-
-        refresh.gameObject.AddComponent<TipTarget>().Key = "TIP_REFRESH";
-        return row;
+        return icon;
     }
 
     /// <summary>
@@ -781,6 +800,20 @@ internal static class ModConfigSidebarWidgets
             float arrowSpace = dropdown.Arrow != null
                 ? Mathf.Max(dropdown.Arrow.rectTransform.sizeDelta.x, dropdown.Arrow.rectTransform.rect.width)
                 : 0f;
+            // 实测修正（2026-11-16，用户：语言下拉文字尾巴和箭头叠在一起）：箭头不一定贴右缘（模板里离右边还有一段），
+            // 只按箭头宽度留空会让省略号压到箭头上。改按箭头左缘到下拉右缘的实际距离留空。
+            if (dropdown.Arrow != null)
+            {
+                Vector3[] corners = new Vector3[4];
+                dropdown.Arrow.rectTransform.GetWorldCorners(corners);
+                RectTransform box = dropdown.RectTransform;
+                float arrowLeft = box.InverseTransformPoint(corners[0]).x;
+                float fromRight = box.rect.xMax - arrowLeft;
+                if (fromRight > arrowSpace && fromRight < box.rect.width * 0.6f)
+                {
+                    arrowSpace = fromRight;
+                }
+            }
             capRect.offsetMax = new Vector2(-(Mathf.Max(arrowSpace, 14f) + 4f), capRect.offsetMax.y);
             capRect.offsetMin = new Vector2(Mathf.Min(capRect.offsetMin.x, 8f), capRect.offsetMin.y);
             // 模板还可能在 TMP margin 里再藏一层左右内边距，清成 0 让 rect 说了算
@@ -859,6 +892,104 @@ internal static class ModConfigSidebarWidgets
         tex.Apply();
         _refreshIcon = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
         return _refreshIcon;
+    }
+
+    private const float IconBoxRatio = 0.6f;
+    private static Sprite? _themeIcon;
+
+    /// <summary>主题图标：半月（实心圆挖掉偏右上的一个圆），配色主题切换钮用。</summary>
+    internal static Sprite ThemeIconSprite()
+    {
+        if (_themeIcon != null)
+        {
+            return _themeIcon;
+        }
+
+        const int size = 64;
+        Vector2 center = new Vector2(30f, 32f), bite = new Vector2(42f, 41f);
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 p = new Vector2(x + 0.5f, y + 0.5f);
+                float inside = Mathf.Clamp01(23f - Vector2.Distance(p, center) + 0.5f);
+                float cut = Mathf.Clamp01(18f - Vector2.Distance(p, bite) + 0.5f);
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, inside * (1f - cut)));
+            }
+        }
+
+        tex.Apply();
+        _themeIcon = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return _themeIcon;
+    }
+
+    /// <summary>
+    /// 主题切换小方钮（模组设置页，「搜索」标题右侧、搜索框上方）：与工具行方钮同一套纸面 + 金色图标，点一下在蓝 / 紫之间切换。
+    /// 「夜里自动紫色」时点击改成固定的另一套（用户手动选了就以手动为准）。
+    /// </summary>
+    internal static void MakeThemeButton(RectTransform page, float left, float top, float size, TMP_Text? alignTo = null)
+    {
+        RectTransform host = MakeRowContainer(page, "MCE_ThemeToggle", left, top, size, size);
+        if (alignTo != null)
+        {
+            ThemeButtonBaseline baseline = host.gameObject.AddComponent<ThemeButtonBaseline>();
+            baseline.Label = alignTo;
+            baseline.Page = page;
+            baseline.Size = size;
+        }
+
+        PeakMenuButton button = ModConfigTranslationExport.MakeButton(host, "MCE_ThemeButton", "BTN_THEME", RefreshColor, 0f, 0f, size, size, ToggleTheme);
+        StyleSquareIconButton(button, ThemeIconSprite(), size);
+        button.gameObject.AddComponent<TipTarget>().Key = "TIP_THEME";
+    }
+
+    /// <summary>
+    /// 2.4.2：主题钮底边与「搜索」两个字的字形底部水平对齐（用户实机截图：原先按搜索框顶边上推 6 定位，钮比字低一截）。
+    /// 字形底部取 TMP 的 textBounds（字形框，不含行高留白），换算到页面坐标；只在文字、字号或页面尺寸变化时重算。
+    /// </summary>
+    internal sealed class ThemeButtonBaseline : MonoBehaviour
+    {
+        internal TMP_Text? Label;
+        internal RectTransform? Page;
+        internal float Size;
+        private string? _text;
+        private float _fontSize = -1f, _pageHeight = -1f;
+
+        private void OnEnable() => _text = null;
+
+        private void LateUpdate()
+        {
+            if (Label == null || Page == null || !Label.isActiveAndEnabled)
+            {
+                return;
+            }
+
+            float pageHeight = Page.rect.height;
+            if (_text == Label.text && Mathf.Approximately(_fontSize, Label.fontSize) && Mathf.Approximately(_pageHeight, pageHeight))
+            {
+                return;
+            }
+
+            Bounds bounds = Label.textBounds;
+            if (bounds.size.y <= 0.01f)
+            {
+                return; // 还没生成网格，下一帧再试
+            }
+
+            _text = Label.text;
+            _fontSize = Label.fontSize;
+            _pageHeight = pageHeight;
+            Vector3 world = Label.rectTransform.TransformPoint(new Vector3(bounds.center.x, bounds.min.y, 0f));
+            float bottom = Page.InverseTransformPoint(world).y - Page.rect.yMax; // 相对页面顶边，向下为负
+            RectTransform host = (RectTransform)transform;
+            host.anchoredPosition = new Vector2(host.anchoredPosition.x, bottom + Size);
+        }
+    }
+
+    internal static void ToggleTheme()
+    {
+        Plugin.ColourTheme.Value = ModConfigLook.IsDark ? ModConfigLook.ThemeMode.Blue : ModConfigLook.ThemeMode.Purple;
     }
 
     private static bool PointInTriangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
@@ -953,6 +1084,23 @@ internal static class ModConfigSidebarWidgets
             }
 
             Rescan(notify: false); // 「跟随游戏语言」这一项的文字本身也要换语言
+        }
+
+        /// <summary>
+        /// 实测修正（2026-11-16）：收起时的框里只写语言名（「简体中文」），不带「(文件名)」——窄框里带文件名必被截断、
+        /// 省略号还会压到箭头。展开列表里仍是「名字 (文件名)」全称。TMP 每次刷新会把框里文字改回全称，所以每帧比对一次（只比字符串）。
+        /// </summary>
+        private void LateUpdate()
+        {
+            if (Dropdown == null || Dropdown.Dropdown == null || Dropdown.Dropdown.captionText == null) return;
+            int value = Dropdown.Dropdown.value;
+            if (value <= 0 || value > _files.Count) return;
+            Loc.LanguageFile file = _files[value - 1];
+            string shortLabel = (file.Display.Length > 0 ? file.Display : file.Stem) + (file.FileCount > 1 ? " ×" + file.FileCount : "");
+            if (Dropdown.Dropdown.captionText.text != shortLabel)
+            {
+                Dropdown.Dropdown.captionText.text = shortLabel;
+            }
         }
 
         /// <summary>页面重开时下拉文字按当前语言重刷（LANG_FOLLOW 是纯文本选项，不带 LocalizedText 组件）。</summary>
@@ -1062,7 +1210,7 @@ internal static class ModConfigSidebarWidgets
     /// 白天保持 ModConfig 原版 Color.dodgerBlue —— 1.0.26 起全天换成 #2F649F 是为了让 TimeTheme 夜间能查表，
     /// 但把白天也一并压暗了；现在昼夜两色都写死，由 ThemeTint 按 IsDark 切换，不再依赖配色表匹配。
     /// </summary>
-    private static readonly Color DefaultsNightBlue = new Color(0f, 0.08f, 0.29f, 1f);
+    private static readonly Color DefaultsNightBlue = new Color(0.251f, 0f, 0.482f, 1f); // 紫色主题：深紫
 
     /// <summary>
     /// 每次 ShowSettings 后过一遍单元格里的「默认」「清空」钮：「默认」挂 ThemeTint（白天原版亮蓝 / 夜间藏蓝），
@@ -1109,6 +1257,8 @@ internal static class ModConfigSidebarWidgets
         text.overflowMode = TextOverflowModes.Ellipsis;
     }
 
+    // 1.1.0（概览页第 8a 章）：JumpWidth 挪到 ModConfigSidebarWidgets.Groups.cs（与 IGMM 同位置）。
+
     private static void StyleLabel(TextMeshProUGUI text, TextAlignmentOptions alignment)
     {
         text.enableAutoSizing = false;
@@ -1126,7 +1276,7 @@ internal static class ModConfigSidebarWidgets
     /// 挂在模组列表上，管两列复选框：建行、显示/隐藏导出列、置顶重排、把文字缩进让开列宽。
     /// 分区子行不带复选框。
     /// </summary>
-    internal sealed class SidebarController : MonoBehaviour
+    internal sealed partial class SidebarController : MonoBehaviour
     {
         internal ModSettingsMenu? Menu;
         internal PeakHorizontalTabs? ModTabs;
@@ -1136,12 +1286,12 @@ internal static class ModConfigSidebarWidgets
         internal GameObject? Header;
         internal TextMeshProUGUI? ExportCaption;
         internal TextMeshProUGUI? PinCaption;
-        internal CheckBox? KeysOnlyBox;
         internal CheckBox? ExportSelectedBox;
         internal ToolbarRefs? Toolbar;
         internal RectTransform? ScrollbarRect;
 
         private readonly List<RowWidgets> _rows = new List<RowWidgets>();
+        private int _translationRevision = -1;
 
         private sealed class RowWidgets
         {
@@ -1151,6 +1301,10 @@ internal static class ModConfigSidebarWidgets
             internal CheckBox Export = null!;
             internal CheckBox Pin = null!;
             internal GameObject Accent = null!;
+            // 1.1.0（概览页第 8a 章，照 IGMM）：分组色条、所属分组（概览 overview.json 的 groupId）、是否自身行
+            internal Image? GroupRail;
+            internal string GroupId = "";
+            internal bool IsSelf;
         }
 
         internal float TextIndent => ModConfigTreeLayoutPatch.ModTextIndent + ColumnWidth + (ExportColumnVisible ? ColumnWidth : 0f);
@@ -1171,7 +1325,10 @@ internal static class ModConfigSidebarWidgets
             }
 
             RefreshColumns();
+            _built = true;
+            RefreshGroups(reorder: false);
             ApplyPinOrder();
+            ApplyGroupVisibility(null);
         }
 
         private void BuildHeader()
@@ -1194,38 +1351,74 @@ internal static class ModConfigSidebarWidgets
             ExportCaption = MakeCaption(row.transform, ExportColumnKey, ModConfigTreeLayoutPatch.ModTextIndent);
             PinCaption = MakeCaption(row.transform, PinKey, ModConfigTreeLayoutPatch.ModTextIndent + ColumnWidth);
 
-            // 右侧：「只看按键」+ 复选框
-            float boxLeft = ModConfigTreeLayoutPatch.SidebarWidth - 8f - CheckBoxSize - 6f;
-            KeysOnlyBox = MakeCheckBox("KeysOnly", row.transform, new Vector2(boxLeft, 0f), false, _ => ToggleKeysOnly());
-            PeakText label = MenuAPI.CreateText("", "Text (TMP)").ParentTo(row.transform);
-            label.SetLocalizationIndex(KeysOnlyKey);
+            // 右侧（1.1.0，快捷键页搬迁第 3 章，照 IGMM 2.4.1 / 2.4.7 / 2.5.1）：「跳转到快捷键设置页」取代「只显示快捷键选项」开关，
+            // 点了打开模组概览并切到快捷键设置页签。方框 + 文字，方框里画 →；靠右、按文字宽度收紧；
+            // 底色是语言行方形钮同款纸面（白天米白、夜里深纸面），字和箭头用金色。
+            GameObject hit = new GameObject("JumpHotkeysHit", typeof(RectTransform), typeof(Image), typeof(Button));
+            RectTransform hitRect = (RectTransform)hit.transform;
+            hitRect.SetParent(row.transform, false);
+            hitRect.anchorMin = new Vector2(1f, 0f);
+            hitRect.anchorMax = new Vector2(1f, 1f);
+            hitRect.pivot = new Vector2(1f, 0.5f);
+            hitRect.offsetMin = new Vector2(-160f, 3f);
+            hitRect.offsetMax = new Vector2(-4f, -3f);
+            Image hitBackground = hit.GetComponent<Image>();
+            ModConfigPaperStyle.Apply(hitBackground, 8f);
+            Tint(hitBackground, ModConfigLook.CreamOf(false), ModConfigLook.BoxOf(true));
+
+            Image jumpBorder = MakeBox("JumpBorder", hitRect, SelfRowTint.Selected, 6f);
+            Tint(jumpBorder, SelfRowTint.Selected, SelfRowTint.NightSelected);
+            RectTransform jumpBorderRect = jumpBorder.rectTransform;
+            jumpBorderRect.anchorMin = jumpBorderRect.anchorMax = new Vector2(0f, 0.5f);
+            jumpBorderRect.pivot = new Vector2(0f, 0.5f);
+            jumpBorderRect.sizeDelta = new Vector2(CheckBoxSize - 4f, CheckBoxSize - 4f);
+            jumpBorderRect.anchoredPosition = new Vector2(6f, 0f);
+            Image jumpBox = MakeBox("JumpBox", jumpBorderRect, ModConfigLook.CreamOf(false), 4f);
+            Tint(jumpBox, ModConfigLook.CreamOf(false), ModConfigLook.BoxOf(true));
+            jumpBox.rectTransform.anchorMin = Vector2.zero;
+            jumpBox.rectTransform.anchorMax = Vector2.one;
+            jumpBox.rectTransform.offsetMin = new Vector2(2f, 2f);
+            jumpBox.rectTransform.offsetMax = new Vector2(-2f, -2f);
+            GameObject jumpGlyph = new GameObject("JumpGlyph", typeof(RectTransform), typeof(Overview.OverviewIconGraphic));
+            RectTransform jumpGlyphRect = (RectTransform)jumpGlyph.transform;
+            jumpGlyphRect.SetParent(jumpBox.rectTransform, false);
+            jumpGlyphRect.anchorMin = Vector2.zero;
+            jumpGlyphRect.anchorMax = Vector2.one;
+            jumpGlyphRect.offsetMin = new Vector2(1f, 1f);
+            jumpGlyphRect.offsetMax = new Vector2(-1f, -1f);
+            Overview.OverviewIconGraphic glyph = jumpGlyph.GetComponent<Overview.OverviewIconGraphic>();
+            glyph.Kind = "arrow-right";
+            glyph.raycastTarget = false;
+            Tint(glyph, SelfRowTint.Selected, SelfRowTint.NightSelected);
+
+            PeakText label = MenuAPI.CreateText("", "Text (TMP)").ParentTo(hitRect);
+            label.SetLocalizationIndex(JumpHotkeysKey);
             RectTransform labelRect = label.GetComponent<RectTransform>();
             labelRect.anchorMin = Vector2.zero;
             labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = new Vector2(ModConfigTreeLayoutPatch.ModTextIndent + ColumnWidth * 2f + 4f, 0f);
-            labelRect.offsetMax = new Vector2(-(ModConfigTreeLayoutPatch.SidebarWidth - boxLeft) - 4f, 0f);
-            StyleLabel(label.TextMesh, TextAlignmentOptions.MidlineRight);
+            labelRect.offsetMin = new Vector2(CheckBoxSize + 8f, 0f);
+            labelRect.offsetMax = new Vector2(-8f, 0f);
+            StyleLabel(label.TextMesh, TextAlignmentOptions.MidlineLeft);
+            FitCaption(label.TextMesh);
+            Tint(label.TextMesh, SelfRowTint.Selected, SelfRowTint.NightSelected);
+            JumpWidth fit = hit.AddComponent<JumpWidth>();
+            fit.Label = label.TextMesh;
+            fit.Row = (RectTransform)row.transform;
+            fit.MinLeft = ModConfigTreeLayoutPatch.ModTextIndent + ColumnWidth * 2f + 12f;
 
-            // 只有「只显示快捷键选项」文字 + 复选框这一段能点，别压到左边的导出 / 置顶标题
-            GameObject hit = new GameObject("KeysOnlyHit", typeof(RectTransform), typeof(Image), typeof(Button));
-            RectTransform hitRect = (RectTransform)hit.transform;
-            hitRect.SetParent(row.transform, false);
-            hitRect.anchorMin = Vector2.zero;
-            hitRect.anchorMax = Vector2.one;
-            hitRect.offsetMin = new Vector2(labelRect.offsetMin.x, 0f);
-            hitRect.offsetMax = Vector2.zero;
-            hit.GetComponent<Image>().color = Color.clear;
-            hitRect.SetAsFirstSibling(); // 在文字与复选框下面
             Button button = hit.GetComponent<Button>();
-            button.transition = Selectable.Transition.None;
-            button.onClick.AddListener(() => KeysOnlyBox?.Toggle());
+            button.transition = Selectable.Transition.ColorTint;
+            button.targetGraphic = jumpBorder;
+            ColorBlock jumpColors = ColorBlock.defaultColorBlock;
+            jumpColors.highlightedColor = new Color(1.2f, 1.2f, 1.2f, 1f);
+            jumpColors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            jumpColors.fadeDuration = 0.08f;
+            button.colors = jumpColors;
+            button.onClick.AddListener(() => Overview.OverviewController.OpenHotkeys(Menu != null ? Menu.MainPage : null));
+            hit.AddComponent<TipTarget>().Key = "TIP_JUMP_HOTKEYS";
             row.AddComponent<ThemeAsOption>();
-            // 手柄：表头的命中区与复选框都能拿焦点，选中时把表头滚回视野
+            // 手柄：表头的命中区能拿焦点，选中时把表头滚回视野
             GamepadSupport.MarkSelectable(hit, Scroll, (RectTransform)row.transform);
-            if (KeysOnlyBox != null)
-            {
-                GamepadSupport.MarkSelectable(KeysOnlyBox.gameObject, Scroll, (RectTransform)row.transform);
-            }
             Header = row;
         }
 
@@ -1244,33 +1437,24 @@ internal static class ModConfigSidebarWidgets
             return text;
         }
 
-        /// <summary>「只看按键」：走 ModConfig 自己的筛选下拉（同 2.13.1 的 KeysOnlyToggle），复选框状态在 Update 里跟 FilterValue 走。</summary>
-        private void ToggleKeysOnly()
-        {
-            if (Menu == null || Menu.FilterDropdown == null || Menu.FilterDropdown.Dropdown == null)
-            {
-                return;
-            }
-
-            int target = Menu.FilterValue == ModConfigTreeLayoutPatch.ControlsFilter ? ModConfigTreeLayoutPatch.AllFilter : ModConfigTreeLayoutPatch.ControlsFilter;
-            if (Menu.FilterDropdown.Dropdown.value == target)
-            {
-                Menu.SetFilter(target);
-            }
-            else
-            {
-                Menu.FilterDropdown.Dropdown.value = target;
-            }
-        }
-
         private void Update()
         {
-            if (KeysOnlyBox != null && Menu != null)
+            if (_translationRevision != Loc.TranslationRevision)
             {
-                bool active = Menu.FilterValue == ModConfigTreeLayoutPatch.ControlsFilter;
-                if (KeysOnlyBox.Checked != active)
+                // 换语言、重载翻译、显示原文切换：模组行名按语言文件重画（行的身份仍是 row.name）
+                bool first = _translationRevision < 0;
+                _translationRevision = Loc.TranslationRevision;
+                foreach (RowWidgets row in _rows)
                 {
-                    KeysOnlyBox.SetSilently(active);
+                    if (row.Text != null)
+                    {
+                        row.Text.text = Loc.TranslateModName(row.Name);
+                    }
+                }
+
+                if (!first && _rows.Count > 0)
+                {
+                    ApplyPinOrder(); // 按名称排序用的是显示名，译名变了要重排
                 }
             }
         }
@@ -1312,8 +1496,10 @@ internal static class ModConfigSidebarWidgets
                     }
 
                     SavePinned();
-                    widgets.Accent.SetActive(value);
+                    UpdateRowMarks(widgets);
+                    RefreshGroupLabels();
                     ApplyPinOrder();
+                    ApplyGroupVisibility(null);
                 });
             if (isSelf)
             {
@@ -1327,7 +1513,13 @@ internal static class ModConfigSidebarWidgets
                 }
             }
 
+            widgets.IsSelf = isSelf;
             widgets.Accent = MakeAccent(row.transform, isSelf || Pinned.Contains(name));
+            widgets.GroupRail = MakeGroupRail(row.transform);
+            if (widgets.Text != null)
+            {
+                widgets.Text.text = Loc.TranslateModName(name);
+            }
 
             // 手柄：行与两列复选框都可聚焦；焦点框亮起 + 选中时把整行滚回视野（复选框对准整行而非小方块）；
             // A 键语义（选中 / 已选中再往分区·右栏钻）在 WireModRow
@@ -1348,7 +1540,7 @@ internal static class ModConfigSidebarWidgets
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 0.5f);
             rect.offsetMin = new Vector2(0f, 4f);
-            rect.offsetMax = new Vector2(2f, -4f);
+            rect.offsetMax = new Vector2(PinAccentWidth, -4f);
             Image image = go.GetComponent<Image>();
             image.raycastTarget = false;
             image.color = ModConfigLook.PinAccent;
@@ -1361,12 +1553,19 @@ internal static class ModConfigSidebarWidgets
         {
             Plugin.HideLocalizationButtons.SettingChanged += OnToolbarOptionChanged;
             Plugin.SidebarSort.SettingChanged += OnSortChanged;
+            // 1.1.0（概览页第 8a 章，照 IGMM）：分组数据、语言、设置表或插件数变了才重建分组标题，否则保留现有标题。
+            if (_built && (SidebarGroupStore.NeedsReload || _groupLanguageRevision != Loc.TranslationRevision ||
+                _groupSettingsCount != (Menu?.settings?.Count() ?? -1) || _groupPluginsCount != BepInEx.Bootstrap.Chainloader.PluginInfos.Count))
+            {
+                RefreshGroups(reorder: true);
+            }
         }
 
         private void OnDisable()
         {
             Plugin.HideLocalizationButtons.SettingChanged -= OnToolbarOptionChanged;
             Plugin.SidebarSort.SettingChanged -= OnSortChanged;
+            CloseGroupEditor();
         }
 
         private void OnToolbarOptionChanged(object? sender, EventArgs args)
@@ -1450,8 +1649,15 @@ internal static class ModConfigSidebarWidgets
         /// <summary>
         /// 自身行永远钉在最顶（表头之下第一位），其后才是置顶行（按它们在 ModConfig 列表里的原顺序——置顶是手动意愿，
         /// 排序方式不碰它），其余行按「排序方式」排（默认 = ModConfig 原序），分区容器再贴回当前选中行下面。
+        /// 有分组时其余行按概览的分组顺序分段：每段先放分组标题，段内再按「排序方式」排，未分组段在最后（1.1.0 概览页第 8a 章，照 IGMM）。
         /// 只动 sibling 顺序，不碰 ModConfig 的 Tabs / buttons 列表。
         /// </summary>
+        /// <summary><paramref name="ancestor"/> 是否是 <paramref name="id"/> 的上级（多层也算；「未分组」段不是任何分组的上级）。</summary>
+        private bool IsGroupAncestor(string ancestor, string id)
+        {
+            return ancestor.Length > 0 && id.Length > 0 && _groupTree.Ancestors(id).Exists(g => g.id == ancestor);
+        }
+
         internal void ApplyPinOrder()
         {
             if (ModTabs == null || ListContent == null)
@@ -1485,10 +1691,45 @@ internal static class ModConfigSidebarWidgets
                 }
             }
 
-            SortRest(rest);
-            foreach (GameObject row in rest)
+            if (_groupSlots.Count == 0)
             {
-                row.transform.SetSiblingIndex(index++);
+                SortRest(rest);
+                foreach (GameObject row in rest)
+                {
+                    row.transform.SetSiblingIndex(index++);
+                }
+            }
+            else
+            {
+                // 1.1.0（实测修正，用户 2026-11-16）：子分组排在本组直属模组前面（与模组列表、快捷键页一致）。
+                // 标题按树序放；一个分组的直属成员等它整棵子树（子分组标题与成员）放完再放。
+                List<GroupSlot> open = new List<GroupSlot>();
+                void PlaceMembers(GroupSlot owner)
+                {
+                    List<GameObject> members = rest.FindAll(row => RowGroup(row) == owner.Id);
+                    SortRest(members);
+                    foreach (GameObject row in members)
+                    {
+                        row.transform.SetSiblingIndex(index++);
+                    }
+                }
+
+                foreach (GroupSlot slot in _groupSlots)
+                {
+                    while (open.Count > 0 && !IsGroupAncestor(open[open.Count - 1].Id, slot.Id))
+                    {
+                        PlaceMembers(open[open.Count - 1]);
+                        open.RemoveAt(open.Count - 1);
+                    }
+
+                    slot.Row.transform.SetSiblingIndex(index++);
+                    open.Add(slot);
+                }
+
+                for (int i = open.Count - 1; i >= 0; i--)
+                {
+                    PlaceMembers(open[i]);
+                }
             }
 
             ModdedTABSButton? selected = Menu != null && Menu.ModTabs != null ? Menu.ModTabs.selectedButton : null;

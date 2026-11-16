@@ -18,7 +18,7 @@ namespace ModConfigEnhance;
 /// 模组设置页左栏工具行上的两个按钮（2.16.0 起从「搜索」标签右侧挪到列表上方）：
 ///   · 导出翻译：把 ModConfig 会显示出来的全部文本 —— 模组名、分区名、选项名、选项说明、下拉框选项 ——
 ///     按模组分块写成 XUnity AutoTranslator 词典格式（<c>原文=</c>，等号右边留给译文）；
-///   · 查漏翻：只在 XUnity 在场时可用，读 BepInEx\config\Translation 下所有词典，只导出还没有译文的原文。
+///   · 查漏翻：按当前语言组判断（整句译文与 r: 正则规则都算已翻），只导出还没有译文的原文。
 /// 工具行第三格「仅导出已选」勾上时，只导出左栏导出列勾选的模组（默认全勾，去勾的记在 cfg 里）。
 /// 导出文件放在 BepInEx\config\ModConfigEnhance\export\，翻好后改名扔进 Translation\<语言>\Text\ 即生效。
 ///
@@ -31,7 +31,6 @@ internal static class ModConfigTranslationExport
     private static readonly Color ExportColor = new Color(0.185f, 0.394f, 0.6226f);
     private static readonly Color CheckColor = new Color(0.4006706f, 0.6039216f, 0.1411764f);
     private static readonly Color XUnityColor = new Color(0.3918986f, 0.1843137f, 0.6235294f);
-    private static readonly Color DisabledColor = new Color(0.3f, 0.3f, 0.3f);
     private static readonly Color FolderColor = new Color(0.55f, 0.36f, 0.16f);
 
     /// <summary>工具行文字统一 13 号（与表头「导出 / 置顶」同号）。</summary>
@@ -40,62 +39,47 @@ internal static class ModConfigTranslationExport
     /// <summary>选项清单超过这个条数就不导出（按键名清单之类）。</summary>
     private const int MaxChoices = 40;
 
-    internal static bool XUnityInstalled => XUnityBridge.Installed;
 
     internal static string ExportDirectory => Loc.ExportDirectory;
 
-    internal static string TranslationDirectory => Path.Combine(Paths.ConfigPath, "Translation");
 
     /// <summary>
     /// 工具行里的一格按钮（左上锚、左上轴）。按钮模板高 67 左右，压到工具行高度后两条虚线要按比例缩回去。
-    /// 没装 XUnity 时查漏翻按钮灰，点了在说明面板提示。
     /// </summary>
     internal static PeakMenuButton MakeToolbarButton(RectTransform page, string name, bool untranslatedOnly, float left, float top, float width, float height)
     {
-        Color color = untranslatedOnly && !XUnityInstalled ? DisabledColor : (untranslatedOnly ? CheckColor : ExportColor);
+        Color color = untranslatedOnly ? CheckColor : ExportColor;
         PeakMenuButton button = MakeButton(page, name, untranslatedOnly ? "BTN_UNTRANSLATED" : "BTN_EXPORT", color, left, top, width, height, () => Run(untranslatedOnly));
-        button.gameObject.AddComponent<ModConfigSidebarWidgets.TipTarget>().Key = untranslatedOnly ? "TIP_UNTRANSLATED" : "TIP_EXPORT";
+        button.gameObject.AddComponent<ModConfigSidebarWidgets.TipTarget>().Key = untranslatedOnly ? "TIP_UNTRANSLATED_V2" : "TIP_EXPORT";
         return button;
     }
 
     /// <summary>
-    /// 第二行：XUnity 的两个运行时开关。「显示原文 / 显示译文」= 它的 Alt+T（所有已翻文本整体切换，导出前看一眼原文、
-    /// 或对照译文效果）；「重载翻译」= 它的 Alt+R（把刚放进 Translation 目录的词典读进来，不用重启）。没装 XUnity 时灰。
+    /// 第二行：「显示原文 / 显示译文」把本模组负责显示的模组文字在原文与译文之间切换（导出前看一眼原文、或对照译文效果）；
+    /// 「重载翻译」把磁盘上的语言文件重新读一遍；「打开目录」。翻译由本模组自己完成，不依赖 XUnity。
     /// </summary>
     internal static void MakeXUnityButtons(RectTransform page, float left, float top, float width, float height, float gap)
     {
         float third = (width - gap * 2f) / 3f;
-        bool available = XUnityInstalled;
-        PeakMenuButton toggle = MakeButton(page, "MCE_XUnityToggle", ToggleKey(), available ? XUnityColor : DisabledColor, left, top, third, height, null);
+        PeakMenuButton toggle = MakeButton(page, "MCE_XUnityToggle", ToggleKey(), XUnityColor, left, top, third, height, null);
         toggle.OnClick(() =>
         {
-            if (!XUnityBridge.CanToggle)
-            {
-                Notify(Loc.Get("NOTICE_NO_XUNITY"), warning: true);
-                return;
-            }
-
-            XUnityBridge.ToggleTranslation();
+            Loc.ToggleOriginal();
             toggle.SetLocalizationIndex(Loc.Index(ToggleKey()));
-            Notify(Loc.Get(XUnityBridge.IsTranslatedMode ? "NOTICE_SHOWING_TRANSLATED" : "NOTICE_SHOWING_ORIGINAL"));
+            Notify(Loc.Get(Loc.ShowingOriginal ? "NOTICE_SHOWING_ORIGINAL_V2" : "NOTICE_SHOWING_TRANSLATED"));
         });
         toggle.gameObject.AddComponent<XUnityToggleLabel>().Button = toggle;
-        toggle.gameObject.AddComponent<ModConfigSidebarWidgets.TipTarget>().Key = "TIP_TOGGLE_ORIG";
+        toggle.gameObject.AddComponent<ModConfigSidebarWidgets.TipTarget>().Key = "TIP_TOGGLE_ORIG_V2";
 
-        // 重载 = 把磁盘上的语言文件重新读一遍：本模组界面词条重新应用、镜像重写，再让 XUnity 重读它自己的词典。
-        // 这样用户改 language\zh-cn.txt 也能立刻见效，不必重新选一次语言（改 XUnity 目录里的文件同样有效）。
+        // 重载 = 把磁盘上的语言文件重新读一遍：界面词条重新应用，模组文字按新内容重画。
+        // 这样用户改 language\zh-cn.txt 也能立刻见效，不必重新选一次语言。
         PeakMenuButton reload = MakeButton(page, "MCE_XUnityReload", "BTN_RELOAD", XUnityColor, left + third + gap, top, third, height, () =>
         {
             Loc.ApplyResult result = Loc.Apply(Plugin.LanguageFile.Value, notify: false, refresh: true);
-            string message = result.Success ? Loc.Get("NOTICE_RELOADED") + "\n" + result.Message : result.Message;
-            if (!XUnityBridge.CanReload)
-            {
-                message += "\n" + Loc.Get("NOTICE_NO_XUNITY");
-            }
-
+            string message = result.Success ? Loc.Get("NOTICE_RELOADED_V2") + "\n" + result.Message : result.Message;
             Notify(message, result.Warning);
         });
-        reload.gameObject.AddComponent<ModConfigSidebarWidgets.TipTarget>().Key = "TIP_RELOAD";
+        reload.gameObject.AddComponent<ModConfigSidebarWidgets.TipTarget>().Key = "TIP_RELOAD_V2";
 
         PeakMenuButton openDir = MakeButton(page, "MCE_OpenFolder", "BTN_OPEN_FOLDER", FolderColor, left + (third + gap) * 2f, top, third, height, OpenRootFolder);
         openDir.gameObject.AddComponent<ModConfigSidebarWidgets.TipTarget>().Key = "TIP_OPEN_DIR";
@@ -118,17 +102,17 @@ internal static class ModConfigTranslationExport
 
     private static string ToggleKey()
     {
-        return XUnityBridge.IsTranslatedMode ? "BTN_SHOW_ORIGINAL" : "BTN_SHOW_TRANSLATED";
+        return Loc.ShowingOriginal ? "BTN_SHOW_TRANSLATED" : "BTN_SHOW_ORIGINAL";
     }
 
-    /// <summary>页面重新打开时按 XUnity 当前状态刷一次按钮文字（Alt+T 也能切，按钮要跟上）。</summary>
+    /// <summary>页面重新打开时按当前「显示原文」状态刷一次按钮文字。</summary>
     private sealed class XUnityToggleLabel : MonoBehaviour
     {
         internal PeakMenuButton? Button;
 
         private void OnEnable()
         {
-            if (Button != null && XUnityInstalled)
+            if (Button != null)
             {
                 Button.SetLocalizationIndex(Loc.Index(ToggleKey()));
             }
@@ -171,12 +155,6 @@ internal static class ModConfigTranslationExport
     {
         try
         {
-            if (untranslatedOnly && !XUnityInstalled)
-            {
-                Notify(Loc.Get("NOTICE_NO_XUNITY_CHECK"), warning: true);
-                return;
-            }
-
             List<ModTexts> mods = Collect();
             if (ModConfigSidebarWidgets.ExportSelectedOnly)
             {
@@ -184,41 +162,9 @@ internal static class ModConfigTranslationExport
                 mods.RemoveAll(mod => mod.Guid != Plugin.PluginGuid && !ModConfigSidebarWidgets.ShouldExport(mod.Name));
             }
 
-            Func<string, bool> isTranslated;
-            bool liveQuery = false;
-            if (!untranslatedOnly)
-            {
-                isTranslated = _ => false;
-            }
-            else if (XUnityBridge.CanQuery)
-            {
-                // 直接问 XUnity 内存词典：精确 / 正则 / 替换全含，与游戏里实际替换一致，不会把正则覆盖的条目误报成未翻译。
-                // 当前语言组自己的译文也计入（同码变体组各算各的，别组的译文不认）。
-                liveQuery = true;
-                HashSet<string>? fallback = null;
-                isTranslated = text =>
-                {
-                    bool? live = XUnityBridge.IsTranslated(text);
-                    if (live.HasValue)
-                    {
-                        return live.Value;
-                    }
-
-                    if (fallback == null)
-                    {
-                        fallback = LoadTranslated(out _);
-                        fallback.UnionWith(Loc.CurrentTranslatedTexts());
-                    }
-
-                    return fallback.Contains(text) || fallback.Contains(text.Trim());
-                };
-            }
-            else
-            {
-                HashSet<string> set = LoadTranslated(out _);
-                set.UnionWith(Loc.CurrentTranslatedTexts());
-                isTranslated = text => set.Contains(text) || set.Contains(text.Trim());
-            }
+            // 当前语言组里有整句译文、或被 r: 正则规则命中的都算已翻（同码变体组各算各的，别组的译文不认）。
+            Func<string, bool> isTranslated = untranslatedOnly ? text => Loc.HasTranslation(text) || Loc.HasBuiltInConfigText(text) : _ => false;
+            bool liveQuery = untranslatedOnly;
 
             string file = Write(mods, untranslatedOnly, isTranslated, liveQuery, out int written, out int skipped, out int noNeed);
             string summary = untranslatedOnly
@@ -433,81 +379,6 @@ internal static class ModConfigTranslationExport
         return input.Trim();
     }
 
-    // ── 已有词典 ────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 读 Translation 下所有语言、所有 .txt 的「原文=译文」行；译文为空的行不算已翻。
-    /// 正则行（r: / sr:）不解析，按未命中处理 —— 用正则覆盖的条目会被误报为未翻译，文件头有说明。
-    /// 本模组镜像文件（ModConfigEnhance_*.txt）跳过：它只反映最后激活的一组，同码变体组各算各的。
-    /// </summary>
-    private static HashSet<string> LoadTranslated(out int fileCount)
-    {
-        HashSet<string> set = new HashSet<string>(StringComparer.Ordinal);
-        fileCount = 0;
-        if (!Directory.Exists(TranslationDirectory))
-        {
-            return set;
-        }
-
-        foreach (string file in Directory.GetFiles(TranslationDirectory, "*.txt", SearchOption.AllDirectories))
-        {
-            string name = Path.GetFileName(file);
-            if (name.StartsWith("_", StringComparison.Ordinal))
-            {
-                continue; // _Substitutions / _Preprocessors 之类不是词典
-            }
-
-            if (name.StartsWith(Loc.MirrorPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                continue; // 本模组镜像只反映最后激活的那组，不能算进别组的覆盖率
-            }
-
-            fileCount++;
-            foreach (string raw in File.ReadLines(file, Encoding.UTF8))
-            {
-                string line = raw.TrimEnd('\r');
-                if (line.Length == 0 || line.StartsWith("//", StringComparison.Ordinal) || line.StartsWith("#", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (line.StartsWith("r:", StringComparison.Ordinal) || line.StartsWith("sr:", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                int eq = FindUnescapedEquals(line);
-                if (eq <= 0 || eq >= line.Length - 1)
-                {
-                    continue;
-                }
-
-                string original = Unescape(line.Substring(0, eq));
-                string translated = Unescape(line.Substring(eq + 1));
-                if (!string.IsNullOrWhiteSpace(original) && !string.IsNullOrWhiteSpace(translated))
-                {
-                    set.Add(original);
-                    set.Add(original.Trim());
-                }
-            }
-        }
-
-        return set;
-    }
-
-    private static int FindUnescapedEquals(string line)
-    {
-        for (int i = 0; i < line.Length; i++)
-        {
-            if (line[i] == '=' && (i == 0 || line[i - 1] != '\\'))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
     // ── 写文件 ──────────────────────────────────────────────────────
 
     private static string Write(List<ModTexts> mods, bool untranslatedOnly, Func<string, bool> isTranslated, bool liveQuery, out int written, out int skipped, out int noNeed)
@@ -520,12 +391,11 @@ internal static class ModConfigTranslationExport
                 : Loc.T("ToTranslate_", "待翻译_", "待翻譯_")) + stamp + ".txt");
 
         StringBuilder sb = new StringBuilder();
-        string lang = XUnityBridge.TargetLanguage ?? "zh";
         string L(string en, string zhCn, string zhTw) => Loc.T(en, zhCn, zhTw);
         void Line(string text) => sb.Append(text).Append('\n');
 
         Line("// ==============================================================");
-        Line("//   ModConfig Enhance " + Plugin.PluginVersion + " · " + (untranslatedOnly
+        Line("//   ModConfig Enhance " + Plugin.DisplayVersion + " · " + (untranslatedOnly
             ? L("untranslated texts", "未翻译文本", "未翻譯文字")
             : L("texts to translate", "待翻译文本", "待翻譯文字")) + " · " + DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
         Line("// ==============================================================");
@@ -561,9 +431,9 @@ internal static class ModConfigTranslationExport
         Line(L("//   - Single key / enum names (A, F1, auto, eu, Left) are dropdown choices: usually copy or leave empty.",
                "//   · 单个键名 / 枚举值（A、F1、auto、eu、Left）是下拉框里的选项，一般照抄或留空。",
                "//   · 單個鍵名 / 列舉值（A、F1、auto、eu、Left）是下拉框裡的選項，一般照抄或留空。"));
-        Line(L("//   - Each original appears once globally (the XUnity dictionary is global); repeats in later mods are not listed.",
-               "//   · 同一句原文全局只出现一次（XUnity 词典是全局的），后面模组里重复的不再列出。",
-               "//   · 同一句原文全域只出現一次（XUnity 詞典是全域的），後面模組裡重複的不再列出。"));
+        Line(L("//   - Each original appears once globally (the dictionary is global); repeats in later mods are not listed.",
+               "//   · 同一句原文全局只出现一次（词典是全局的），后面模组里重复的不再列出。",
+               "//   · 同一句原文全域只出現一次（詞典是全域的），後面模組裡重複的不再列出。"));
         Line(L("//   - Skipped automatically: KeyCode / key-name lists and choice lists longer than " + MaxChoices + " items.",
                "//   · 已自动跳过：KeyCode / 按键名清单、超过 " + MaxChoices + " 项的选项清单。已是中文或中英双语的行留空即可。",
                "//   · 已自動跳過：KeyCode / 按鍵名清單、超過 " + MaxChoices + " 項的選項清單。已是中文或中英雙語的行留空即可。"));
@@ -575,9 +445,9 @@ internal static class ModConfigTranslationExport
             if (untranslatedOnly)
             {
                 Line(liveQuery
-                    ? L("//   Untranslated only. MCE_ keys are checked against the active language group; other texts use XUnity's loaded dictionary (exact, regex and substitutions).",
-                        "//   只含未翻译条目：MCE_ 键查当前语言组，其余文本查 XUnity 当前词典（精确、正则、替换均计入）。",
-                        "//   只含未翻譯條目：MCE_ 鍵查目前語言組，其餘文字查 XUnity 目前詞典（精確、正則、替換均計入）。")
+                    ? L("//   Untranslated only. MCE_ keys are checked against the active language group; other texts count as translated when an exact line or an r: regex rule covers them.",
+                        "//   只含未翻译条目：MCE_ 键查当前语言组，其余文本有整句译文或被 r: 正则规则命中即算已翻。",
+                        "//   只含未翻譯條目：MCE_ 鍵查目前語言組，其餘文字有整句譯文或被 r: 正則規則命中即算已翻。")
                     : L("//   Untranslated only. MCE_ keys are checked against the active language group; other texts fall back to exact matches in Translation .txt files.",
                         "//   只含未翻译条目：MCE_ 键查当前语言组；其余文本退回按 Translation 下 .txt 原文精确匹配。",
                         "//   只含未翻譯條目：MCE_ 鍵查目前語言組；其餘文字退回按 Translation 下 .txt 原文精確比對。"));
@@ -679,13 +549,5 @@ internal static class ModConfigTranslationExport
         return 1;
     }
 
-    private static string Escape(string text)
-    {
-        return text.Replace("\r", "").Replace("\n", "\\n").Replace("=", "\\=");
-    }
-
-    private static string Unescape(string text)
-    {
-        return text.Replace("\\=", "=").Replace("\\n", "\n");
-    }
+    private static string Escape(string text) => Loc.Escape(text);
 }
