@@ -37,14 +37,14 @@ namespace ModConfigEnhance;
 /// </summary>
 internal static class ModConfigDescriptionPanel
 {
-    /// <summary>2.15.0 是 88（描述两行 + 元信息一行）；2.16.0 翻倍到 176，能放五六行说明。</summary>
-    internal const float PanelHeight = 176f;
+    /// <summary>Compact explanation area; long descriptions retain their own wrapping and scrolling.</summary>
+    internal const float PanelHeight = 144f;
     private const float PanelTop = 8f;
     private const float Padding = 8f;
     private const float PaddingLeft = 14f;
-    private const float TitleFontSize = 24f;
-    private const float DescriptionFontSize = 18f;
-    private const float MetaFontSize = 14f;
+    private const float TitleFontSize = 20f;
+    private const float DescriptionFontSize = 16f;
+    private const float MetaFontSize = 13f;
     private const int FadeSoftness = 10;
     private const float ScrollbarWidth = 6f;
 
@@ -130,7 +130,7 @@ internal static class ModConfigDescriptionPanel
         contentRect.sizeDelta = Vector2.zero;
         VerticalLayoutGroup group = content.GetComponent<VerticalLayoutGroup>();
         group.padding = new RectOffset(0, 0, 0, 0);
-        group.spacing = 2f;
+        group.spacing = 1f;
         group.childAlignment = TextAnchor.UpperLeft;
         group.childControlWidth = true;
         group.childControlHeight = true;
@@ -196,6 +196,8 @@ internal static class ModConfigDescriptionPanel
         text.color = color;
         text.raycastTarget = false;
         text.text = "";
+        Overview.MceRegularFont.ApplyDefault(text);
+        Overview.MceTextWeight.Apply(text);
         return text;
     }
 
@@ -221,6 +223,7 @@ internal static class ModConfigDescriptionPanel
         private ModdedTABSButton? _overviewMod;
         private ModdedTABSButton? _overviewSection;
         private bool _overviewInitialized;
+        private int _translationRevision = -1;
 
         /// <summary>FitToCells 每帧量单元格四角时复用，免得每帧分配。</summary>
         private static readonly Vector3[] Corners = new Vector3[4];
@@ -236,14 +239,7 @@ internal static class ModConfigDescriptionPanel
         {
             if (mod == null)
             {
-                if (Plugin.InGameModManagerLoaded)
-                {
-                    // 1.0.3：完整版同时在场时提示一次（只提示，不拦截）
-                    ShowNotice(Loc.T("In-Game Mod Manager is also installed. It already includes everything ModConfig Enhance does, and running both changes this page twice. Keep only one of them.",
-                        "同时装了「游戏内模组管理器」：它已包含 ModConfig Enhance 的全部功能，两个一起开会重复修改这个页面。建议只保留其中一个。",
-                        "同時裝了「遊戲內模組管理器」：它已包含 ModConfig Enhance 的全部功能，兩個一起開會重複修改這個頁面。建議只保留其中一個。"), warning: true);
-                    return;
-                }
+                // 1.1.0：原来这里在 IGMM 同时在场时提示一次（1.0.3「只提示，不拦截」）；现在检测到 IGMM 时 MCE 整个不加载（Plugin.Awake），这条提示不会再出现，删掉。
                 ShowNotice(Loc.T("Select a mod to view its information.", "选择左侧模组查看信息。", "選擇左側模組查看資訊。"));
                 return;
             }
@@ -262,12 +258,13 @@ internal static class ModConfigDescriptionPanel
                 }
             }
 
-            string category = section?.category ?? Loc.T("All", "全部", "全部");
+            string category = section?.category is { Length: > 0 } sectionName ? Loc.TranslateExternal(sectionName) : Loc.T("All", "全部", "全部");
             string categoryText = Loc.T("Category: ", "当前子分类：", "目前子分類：") + category;
-            string description = ReadModDescription(location);
+            string rawDescription = ReadModDescription(location, showFallback: false);
+            string description = rawDescription.Length == 0 ? ReadModDescription(location) : Loc.TranslateExternal(rawDescription);
             ShowNotice(description);
-            // 介绍独占一个文本组件，和导出的原文完全一致，才能命中 XUnity 的精确词典。
-            SetTexts(name, description, JoinMeta(version.Length == 0 ? "" : "v" + version, categoryText));
+            // 模组名与介绍按语言文件显示（整句精确 → 正则 → 原文）。
+            SetTexts(Loc.TranslateModName(name), description, JoinMeta(version.Length == 0 ? "" : "v" + version, categoryText));
 
             StyleTitle();
         }
@@ -314,8 +311,8 @@ internal static class ModConfigDescriptionPanel
         /// </summary>
         private void StyleTitle()
         {
-            bool dark = TimeThemeBridge.IsDark;
-            Color prominent = dark ? TimeThemeBridge.DarkTabText : Color.white;
+            bool dark = ModConfigLook.IsDark;
+            Color prominent = dark ? ModConfigLook.Prominent : Color.white;
             Color muted = dark ? Color.Lerp(prominent, new Color(0.60f, 0.60f, 0.60f, 1f), 0.65f) : MetaColor;
             if (Title != null && Title.color != prominent) Title.color = prominent;
             if (Meta != null && Meta.color != prominent) Meta.color = prominent;
@@ -333,6 +330,7 @@ internal static class ModConfigDescriptionPanel
         internal void ShowNotice(string text, bool warning = false)
         {
             _noticeParts = null;
+            _translationRevision = Loc.TranslationRevision;
             if (Description != null)
             {
                 Description.richText = false; // 外部文本按字面渲染，不解析标签
@@ -354,7 +352,8 @@ internal static class ModConfigDescriptionPanel
         internal void ShowNotice(List<(string Text, NoticeRole Role)> parts)
         {
             _noticeParts = parts;
-            _noticeDark = TimeThemeBridge.IsDark;
+            _translationRevision = Loc.TranslationRevision;
+            _noticeDark = ModConfigLook.IsDark;
             StyleTitle();
             _shownCell = null;
             _noticeHovered = FindHoveredCell();
@@ -366,8 +365,8 @@ internal static class ModConfigDescriptionPanel
 
         private static Color NoticeColor(NoticeRole role)
         {
-            bool dark = TimeThemeBridge.IsDark;
-            Color prominent = dark ? TimeThemeBridge.DarkTabText : Color.white;
+            bool dark = ModConfigLook.IsDark;
+            Color prominent = dark ? ModConfigLook.Prominent : Color.white;
             return role switch
             {
                 NoticeRole.Header => prominent,
@@ -416,12 +415,24 @@ internal static class ModConfigDescriptionPanel
                 }
             }
 
-            if (!_overviewInitialized || selectedMod != _overviewMod || selectedSection != _overviewSection)
+            if (_translationRevision != Loc.TranslationRevision)
+            {
+                _translationRevision = Loc.TranslationRevision;
+                _overviewInitialized = false; _shownCell = null;
+            }
+
+            // 手柄在左栏上下移动时，说明框预览焦点所在模组的介绍，但不切换右栏显示的模组配置；
+            // 焦点离开模组行（进右栏 / 分区行）就回到实际选中的模组。
+            ModdedTABSButton? previewMod = FocusedModRow();
+            ModdedTABSButton? shownMod = previewMod ?? selectedMod;
+            ModdedTABSButton? shownSection = previewMod != null && previewMod != selectedMod ? null : selectedSection;
+            if (!_overviewInitialized || shownMod != _overviewMod || shownSection != _overviewSection)
             {
                 _overviewInitialized = true;
-                _overviewMod = selectedMod;
-                _overviewSection = selectedSection;
-                ShowOverview(selectedMod, selectedSection);
+                _overviewMod = shownMod;
+                _overviewSection = shownSection;
+                _shownCell = null;
+                ShowOverview(shownMod, shownSection);
             }
 
             SettingsUICell? mouseCell = FindHoveredCell();
@@ -460,7 +471,7 @@ internal static class ModConfigDescriptionPanel
             }
 
             string optionName = hovered.m_text != null ? hovered.m_text.text : "";
-            SetTexts(FormatHeader(property), FormatDescription(property.ConfigBase),
+            SetTexts(FormatHeader(property), Loc.TranslateExternal(FormatDescription(property.ConfigBase)),
                 JoinMeta(FormatVersion(property), optionName, FormatMeta(property.ConfigBase)));
         }
 
@@ -642,6 +653,19 @@ internal static class ModConfigDescriptionPanel
             return null;
         }
 
+        /// <summary>The mod row (left column) holding the gamepad focus, if any.</summary>
+        private ModdedTABSButton? FocusedModRow()
+        {
+            if (!GamepadSupport.IsGamepad || Menu == null || Menu.ModTabController == null) return null;
+            EventSystem? system = EventSystem.current;
+            GameObject? selected = system != null ? system.currentSelectedGameObject : null;
+            if (selected == null || !selected.transform.IsChildOf(Menu.ModTabController.transform)) return null;
+            // Section rows are nested inside the mod list in the tree layout; they are not mods.
+            if (Menu.SectionTabController != null && Menu.SectionTabController.Tabs.Contains(selected)) return null;
+            ModdedTABSButton? row = selected.GetComponent<ModdedTABSButton>();
+            return row != null && !string.IsNullOrEmpty(row.category) ? row : null;
+        }
+
         private static SettingsUICell? FindFocusedCell()
         {
             EventSystem? system = EventSystem.current;
@@ -676,7 +700,7 @@ internal static class ModConfigDescriptionPanel
     {
         try
         {
-            return property.GetCategory() ?? "";
+            return Loc.TranslateModName(property.GetCategory() ?? "");
         }
         catch
         {

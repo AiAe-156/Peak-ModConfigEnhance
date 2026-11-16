@@ -1,228 +1,289 @@
-# ModConfig Enhance
+<a id="english"></a>
 
-**English** | [中文](#中文说明)
+<div align="center">
+
+# ModConfig Enhance
 
 PEAK · enhancements for the ModConfig (PEAKLib.ModConfig) settings page
 
-> Ever find yourself scrolling back and forth through a pile of mod settings just to change one value? Digging through cfg comments to figure out what an option does? Want to add multi-language support to your modpack? From now on, this mod lets you manage your modpack's settings far more elegantly!
->
-> Tree-style mod list sidebar — √
-> An info panel showing mod name, version, option descriptions and more — √
-> One-click export of all unlocalized texts, free to translate, multi-language supported — √
-> Name sorting and pinning — √
-> Compatible with TimeTheme's purple night theme — √
-> …and other small tweaks
+[![Version](https://img.shields.io/badge/version-1.1.0-2ea44f)](https://github.com/AiAe-156/Peak-ModConfigEnhance/blob/master/CHANGELOG.md)
+[![Game](https://img.shields.io/badge/game-PEAK-7b5cd6)](https://thunderstore.io/c/peak/)
+[![Thunderstore downloads](https://img.shields.io/thunderstore/dt/AiAe-T/ModConfigEnhance?label=Thunderstore&color=23a9ff)](https://thunderstore.io/c/peak/p/AiAe-T/ModConfigEnhance/)
+[![No network](https://img.shields.io/badge/No%20network-%E4%B8%8D%E8%81%94%E7%BD%91-0a7d5a)](#english)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/AiAe-156/Peak-ModConfigEnhance/blob/master/LICENSE.txt)
+[![GitHub](https://img.shields.io/badge/GitHub-Peak--ModConfigEnhance-181717?logo=github)](https://github.com/AiAe-156/Peak-ModConfigEnhance)
 
-> **Looking for more?** [In-Game Mod Manager](https://thunderstore.io/c/peak/) is the full version: everything here plus a mod overview, profiles, updates and modpacks. It already includes this mod's features, so install only one of the two.
+**English** ｜ [中文](#中文说明) 👈
 
-## Features
+</div>
 
-| Feature | Details |
-|---|---|
-| Tree sidebar | The left column lists mods; the selected mod's sections expand beneath it, options on the right. Pinning supported. |
-| | Search, type filters, a Pin column and an Export column that exports only the ticked mods' texts. |
-| | Rows with no matches auto-hide while filtering; keybind options get their own filter button. |
-| Description panel | A persistent panel at the top right: hover/select an option to see its description, default value, range or choices; |
-| | select a mod/section to see its name, version and summary. Scrollable. |
-| UI localization | All UI text comes from language files; a dropdown on the page switches languages instantly. |
-| Translation tools | Export every text awaiting translation / only the untranslated entries; global original ↔ translation toggle; |
-| | live dictionary reload — add as many languages to your modpack as you like! |
-| Gamepad support | Two-level navigation between the left and right panels: A enters/confirms, B steps back, LB/RB switch mods; |
-| | sliders need A to arm before adjusting; on a keybind, press A then hold the key for 1 second to write it. |
-| Theme | Hand-drawn paper look; follows TimeTheme's day/night palette when installed; plus vanilla-style visuals and animations. |
+> Ever find yourself scrolling back and forth through a pile of mod settings just to change one value? Digging through cfg comments to figure out what an option does? Want to add multi-language support to your modpack? From now on, this mod lets you organize your modpack's settings far more elegantly!
 
-## Demo
+**Mod overview**: every installed mod at a glance, sorted into your own groups - √  
+**Keybindings**: every mod's keybinds on one page, with free-form controller combos - √  
+**Log window**: built in, with filters and one-click export - √  
+**Tree sidebar**: search, name sorting, pinning - √  
+**Description panel**: mod name, version, option descriptions, defaults and ranges - √  
+**Translation**: export untranslated texts in one click, translate freely, any number of languages, no XUnity needed - √  
+**Theme**: compatible with TimeTheme's purple night theme - √  
+…and other small tweaks
 
-![Night-TimeTheme](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/%E5%A4%9C%E6%99%9A1.png)
-*Night theme (TimeTheme)*
+## ✨ At a glance
 
-![Day](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/%E7%99%BD%E5%A4%A91.png)
-*Daytime look*
+| | |
+|:---:|:---:|
+| ![Settings page: tree sidebar and description panel](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/settings-page-en.jpg) <br> **Tree sidebar & info panel** · Every mod in a tree; descriptions, defaults and ranges at a glance. | ![Mod list with coloured groups](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/overview-list-en.jpg) <br> **Mod list** · Every installed mod on one page, with the full dependency chain on hover. |
+| ![Keybindings page with keyboard and controller columns](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/overview-hotkeys-en.jpg) <br> **Keybindings** · Every mod's keybinds on one page, keyboard and controller. | ![Log window](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/log-window-en.jpg) <br> **Log window** · Live logs with filters, recent-launch history and ZIP export. |
 
-![Demonstration](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/%E6%BC%94%E7%A4%BA%E8%A7%86%E9%A2%91main.gif)
-*Demo gif (may take a moment to load)*
+## ⚙️ Settings page enhancements
 
-## Dependencies
+- **Tree sidebar**: the left column lists mods, and the selected mod's sections expand beneath it. Search (option names, mod names, sections, config keys, descriptions), type filters and pinning.
+- **Option grid**: compact rows with the default value beside each control; duplicate keybinds get a badge that jumps to the other option.
+- **Description panel**: hover or select an option to see its description, default value and range; select a mod to see its name, version and summary.
+- **Themes**: blue and purple, switched with the moon button; with TimeTheme installed it can turn purple at night.
+- **Go to keybindings** in the header opens the keybindings page directly.
+
+<details>
+<summary>🎮 Controller on the settings page</summary>
+
+- <kbd>A</kbd> confirms / enters; <kbd>B</kbd> steps back level by level (press <kbd>B</kbd> twice quickly to leave the page).
+- <kbd>LB</kbd> / <kbd>RB</kbd> switch mods; the right stick scrolls the options.
+- Sliders: press <kbd>A</kbd>, then left / right to adjust. Keybinds: press <kbd>A</kbd>, then hold the target key for 1 second to write it.
+- Text boxes open the on-screen keyboard in Steam Big Picture / on Steam Deck.
+
+</details>
+
+## 🧭 Mod overview page
+
+**Where**: the **Mod overview** button right below **Mod Settings** in the game's **Settings** menu. It has three tabs: **Mod list**, **Keybindings** and **Mod Settings**.
+
+### Mod list
+
+- Every installed mod (disabled ones too): enabled state (read-only), name, version, author and description, plus settings / homepage / folder buttons.
+- Hover a mod for its full dependency chain; badges mark resource packs, nested mods, loose DLLs and duplicate copies.
+- **Double-click a name or description to change it.** It is saved into the current language file and every page shows it; leave it empty to restore the original.
+
+### Groups
+
+- Your own display groups, up to 3 levels with colours; shared by the mod list, the keybindings page and the settings page sidebar. **Groups are for display only and never move any folder.**
+- **Group management** edits names, parent groups, colours and members; right-click a group header to add a subgroup, edit or delete it.
+- **With the pencil on, drag to reorder or to drop mods into a group**; with it off, dragging just scrolls. Drop a group header on the top or bottom edge of another to place it before / after that group, or on its middle to make it a subgroup.
+- Subgroups are listed before a group's own mods.
+- The first time you open it, groups can be built in one click from your `plugins` folder layout.
+
+### Log window
+
+Live BepInEx, game and custom logs; filter by level (several at once) / mod / group, search, and fold repeated errors. **Run** switches to the logs of the last 3 launches; one click exports a ZIP (no config values, personal paths removed).
+
+### Keybindings
+
+- Every mod's keybinds on one page, in keyboard and controller columns; **a key is written to that mod's config as soon as it is recorded**.
+- Duplicate keys are flagged (including keys the game itself uses); ignore the ones you don't mind.
+- Double-click a cell to write a one-line note for the current language.
+- **Controller combos**: keybinds that only accept keyboard keys can still get a controller button or combo in the controller column (hold a few buttons, then press the last one; up to 4). Combos work only in game.
+
+> ⚠️ **Heads-up**: the buttons you hold first still reach the game — only the last button is blocked.
+
+<details>
+<summary>🎮 Controller on the overview page</summary>
+
+- ↑ / ↓ select (hold the D-pad or left stick to keep moving); <kbd>LB</kbd> / <kbd>RB</kbd> jump between toolbar buttons.
+- <kbd>RT</kbd> + <kbd>LB</kbd> / <kbd>RB</kbd> move to the tab buttons, then <kbd>A</kbd> opens the tab; <kbd>RT</kbd> + ← / → page up / down; <kbd>RT</kbd> + <kbd>L3</kbd> expand / collapse all.
+- <kbd>B</kbd> steps back; press <kbd>B</kbd> twice quickly to leave the page.
+- Recording a controller key / combo: hold a few buttons, then press the last one (up to 4); hold <kbd>B</kbd> for 1 second to finish.
+
+</details>
+
+## 📦 Dependencies & compatibility
 
 - **Required**: BepInEx 5, PEAKLib.Core, PEAKLib.UI, ModConfig 1.8.2
-- **Listed, but optional in practice**: XUnity AutoTranslator — it is in the dependency list so the mod manager installs it alongside, but nothing breaks without it: only the translation tools (Untranslated / Show original / dictionary mirroring) are greyed out, everything else works. See the note below — this mod changes one of its settings.
-- **Optional**: TimeTheme (day/night palette)
+- **Optional**: TimeTheme (purple at night)
+- **No longer needed: XUnity AutoTranslator** — this mod now does all translation itself. An endpoint that an older version emptied is not restored automatically; fill it in again yourself if you want it back.
+- **Do not install together with In-Game Mod Manager**: it already contains everything this mod does. When both are installed, this mod does not load and only leaves a warning in the log.
 
-## ⚠️ This mod changes an XUnity AutoTranslator setting
+## 📁 Files & languages
 
-With its factory-default endpoint (GoogleTranslateV2), XUnity AutoTranslator sends **every** UI text — mod settings included — to online machine translation, and the results are often nonsense. So when XUnity is installed, this mod's option `Disable XUnity machine translation` (**on by default**; `BepInEx\config\com.aiae.modconfigenhance.cfg`, section `2. Localization`) does the following on every startup:
+Everything this mod keeps lives in one folder and stays on this machine:
 
-- empties `Endpoint` / `FallbackEndpoint` in `AutoTranslatorConfig.ini`, so XUnity only applies dictionaries (this mod's language files, your own dictionaries) and no longer machine-translates;
-- empties the machine-translation caches `_AutoGeneratedTranslations*.txt` in every language folder, keeping a one-time `.bak` copy next to each file.
+```text
+BepInEx\config\ModConfigEnhance\
+├─ language\              Language files: en-us.txt  zh-cn.txt  zh-tw.txt (add your own)
+├─ export\                Texts written by "Export texts"
+├─ overview.json          Groups, folded state, Hide disabled
+├─ hotkeys.json           Ignored duplicate warnings, folded mods
+├─ gamepad-combos.json    Controller combos
+└─ cache\                 Log favourites, copies of the last 3 launches' logs (safe to delete)
+```
 
-**If you rely on live machine translation, set this option to `false` before the first launch** — or turn it off afterwards, put your endpoint back into `AutoTranslatorConfig.ini` and restore the `.bak` files.
+**Adding a language**: click **Export texts** → put each translation to the right of the `=` → save as UTF-8 named `lowercase-code.txt` (e.g. `de-de.txt`) in `language\` → click **Refresh**, then pick it in the language dropdown.
 
-
-## Language files
-
-Directory: `BepInEx\config\ModConfigEnhance\language\`
-
-- Built-in `en-us.txt`, `zh-cn.txt`, `zh-tw.txt` are created once and never overwritten; files whose name starts with `_` never appear in the dropdown.
-- **Adding a language**:
-  - Export texts → follow the rules written inside the exported file and put each translation to the right of the `=`
-  - Save as UTF-8 → rename to `lowercase-code.txt` (e.g. `de-de.txt` for German) and place it at `PEAK\BepInEx\config\ModConfigEnhance\language\de-de.txt`
-  - Click **Refresh**, find your language in the dropdown on the left and select it — it loads automatically.
-  - After editing `de-de.txt`, click **Reload texts** to load the new translations.
-  - For top-up translations you have two choices:
-    - Save them as `de-de_*.txt` inside the `language` folder, where `*` is any Chinese/English characters (other scripts unconfirmed).
-    - Or paste all of them into `de-de.txt`, save, then **Reload texts**.
-- **Naming**: `code[-variant][_part].txt` — `code-variant.txt` is a standalone group of the same language (a different full translation with its own dropdown entry); `group_part.txt` merges into the group named before the `_` and loads after it in filename order — later files override earlier ones, conflicts are logged.
-- **Dropdown label**: a `// display: <name>` first line shows `name (filename)`; without it the plain filename shows; multi-file groups get `×count`. Variant groups of the same code are fully independent — the untranslated check only counts the selected group.
-- Aliases: `zh` = `zh-cn`, `en` = `en-us`; the code is just the leading `xx`/`xx-yy` of the filename and only matters for the XUnity mirror folder and "Follow game language" matching.
-- Picking a language also switches XUnity to it: the dictionary folder becomes `Translation\<code>\Text\`, entries are mirrored there as `ModConfigEnhance_<code>.txt`, and `Language=` in `AutoTranslatorConfig.ini` is rewritten. Turn off this link with this mod's **Switch XUnity language with the language file** option.
-- File format is identical to XUnity dictionaries: `key=translation`, `//` comments, `\n` newline, `\=` literal equals, `{0}` placeholders kept — never modify the left side of `=`.
-
-## Toolbar
+<details>
+<summary>🧰 Toolbar and translation file format</summary>
 
 | Button | What it does |
 |---|---|
-| Export texts | Exports all UI texts to `export\` (this mod's `MCE_` block + one block per mod, manifest summaries included) |
-| Untranslated | Exports only the entries the XUnity dictionary doesn't cover (requires XUnity AutoTranslator) |
-| Selected only | Adds an "Export" checkbox column to the sidebar — only the ticked mods get exported (this mod is always included) |
-| Show original / Show translated | Global original ↔ translation toggle (same as XUnity's Alt+T) |
-| Reload texts | Re-reads the language files and refreshes XUnity's dictionaries |
+| Export texts / Untranslated | Exports all / not-yet-translated texts to `export\` |
+| Selected only | Exports only the mods ticked in the sidebar |
+| Show original / translated | Switches between original and translated text |
+| Reload texts / Refresh | Re-reads the language files / finds new languages |
 | Open folder | Opens `config\ModConfigEnhance\` |
-| Language ▾ / Refresh | Pick a language group; **Refresh** after adding a new language, **Reload texts** after adding a sub-file to an existing one |
 
-## Gamepad controls
+After editing a file, click **Reload texts**. Top-up translations can be saved as `de-de_extra.txt` and are merged in automatically. Same format as XUnity dictionaries: `key=translation`, `//` comments, and `r:"regex"=translation` for regex rules.
 
-- **Navigation**: stick / D-pad moves focus; A confirms/enters; B steps back level by level (slider → editing → capture → right panel → left panel → leave page)
-- **LB/RB**: switch mods
-- **Sliders**: A arms value mode, left/right adjust, A or B exits; each step is 0.5% of the range — hold for 1s to auto-repeat at 10 steps/s, 3s for 40 steps/s
-- **Dropdowns**: A opens, up/down to move, A picks, B closes
-- **Input fields**: A starts editing, B exits. No on-screen keyboard — type on a physical keyboard or the platform OSK (Steam+X on Steam Deck)
-- **Keybinds**: A starts capture, hold the target key for 1 second to write it; B cancels
+</details>
 
-## Config file
+---
 
-`BepInEx\config\com.aiae.modconfigenhance.cfg`:
-
-| Section | Contents |
-|---|---|
-| 1. Layout | Tree sidebar, description panel and classic brown colour toggles (restart required) |
-| 2. Localization | UI localization, hide localization buttons (instant), make XUnity follow the chosen language file, disable XUnity machine translation (**on by default** — see the note above) |
-| 3. State | Runtime state: language file, pins, export exclusions etc. (Hidden) |
-
-Feedback: `2323086800@qq.com` / QQ group `1104320838` · GitHub: https://github.com/AiAe-156/Peak-ModConfigEnhance
+💬 **Feedback**: `2323086800@qq.com` / QQ group `1104320838` · GitHub: https://github.com/AiAe-156/Peak-ModConfigEnhance
 
 ---
 
 <a id="中文说明"></a>
 
+<div align="center">
+
 # ModConfig Enhance
 
 PEAK · ModConfig（PEAKLib.ModConfig）设置页增强
 
-> 你是否经常在一堆模组配置里反复来回滑动，就为了改某一个参数;是否因为想知道某个配置项是做什么的而去config里翻注释；想为整合包添加多语言支持...从现在开始，你可以利用该模组更加优雅的管理你的整合包！
-> 
-> 模组列表树形栏  - √
-> 一个能显示模组名称，版本号，配置项注释等信息的说明框  - √
-> 一键导出所有非本地化语言并自由发挥翻译，支持多重语言  - √
-> 名称排序和置顶功能  - √
-> 兼容TimeTheme 夜间幽紫主题 - √
-> 以及其他小改动...
+[![Version](https://img.shields.io/badge/version-1.1.0-2ea44f)](https://github.com/AiAe-156/Peak-ModConfigEnhance/blob/master/CHANGELOG.md)
+[![Game](https://img.shields.io/badge/game-PEAK-7b5cd6)](https://thunderstore.io/c/peak/)
+[![Thunderstore downloads](https://img.shields.io/thunderstore/dt/AiAe-T/ModConfigEnhance?label=Thunderstore&color=23a9ff)](https://thunderstore.io/c/peak/p/AiAe-T/ModConfigEnhance/)
+[![No network](https://img.shields.io/badge/No%20network-%E4%B8%8D%E8%81%94%E7%BD%91-0a7d5a)](#中文说明)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/AiAe-156/Peak-ModConfigEnhance/blob/master/LICENSE.txt)
+[![GitHub](https://img.shields.io/badge/GitHub-Peak--ModConfigEnhance-181717?logo=github)](https://github.com/AiAe-156/Peak-ModConfigEnhance)
 
-> **想要更多功能？** 完整版「游戏内模组管理器」（In-Game Mod Manager）包含本模组的全部功能，另有模组概览、配置方案、更新和整合包。两者功能重叠，只装其中一个即可。
+[English](#english) ｜ **中文**
 
-## 功能
+</div>
 
-| 功能 | 说明 |
-|---|---|
-| 树形侧栏 | 左栏显示模组列表，选中模组会在其下方展开分区。可以置顶右侧为选项。 |
-|		| 支持搜索、类型筛选、置顶选中列、仅导出勾选列的翻译文本。 |
-|		| 筛选时无匹配项的行自动隐藏；单独为按键设置添加了筛选按钮。 |
-| 说明面板 | 右上方常驻面板：悬停/选中选项时显示其说明、默认值、范围或可选值； |
-|		| 选中模组/分区时显示该模组名称、版本与简介。可滚动 |
-| 界面本地化 | 全部界面文字走语言文件，页面内下拉实时切换语言 |
-| 翻译工具 | 导出全部待翻文本/导出未翻条目、原文/译文全局切换；|
-|		 | 支持实时重载词典、为你的整合包添加多重语言！|
-| 手柄支持 | 左栏↔右栏两级导航，A 进入/确认、B 逐级返回、LB/RB 切模组； |
-| 		 | 滑条按 A 激活后调值；按键绑定按 A 后长按 1 秒写入 |
-| 主题 | 手绘纸面风格；装 TimeTheme 后随昼夜配色；还有适配原本风格的视觉风格和动效 |
+> 你是否经常在一堆模组配置里反复来回滑动，就为了改某一个参数;是否因为想知道某个配置项是做什么的而去config里翻注释；想为整合包添加多语言支持...从现在开始，你可以利用该模组更加优雅的整理你的整合包！
 
+**模组概览**：已装模组一览，按自己的分组整理 - √  
+**快捷键**：所有模组的快捷键集中一页设置，手柄组合键自由组合 - √  
+**日志窗口**：内置，可筛选、一键导出 - √  
+**树形模组栏**：搜索、名称排序、置顶 - √  
+**说明面板**：显示模组名称、版本号、配置项说明、默认值与范围 - √  
+**翻译**：一键导出未翻译的文本，自由翻译，支持多种语言，不再依赖 XUnity - √  
+**主题**：兼容 TimeTheme 夜间幽紫主题 - √  
+以及其他小改动...
 
-## 演示
+## ✨ 功能一览
 
-![Night-TimeTheme](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/%E5%A4%9C%E6%99%9A1.png)
-*夜晚主题(Timetheme)*
+| | |
+|:---:|:---:|
+| ![设置页：树形侧栏与说明面板](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/settings-page-zh.jpg) <br> **树形侧栏与说明面板** · 模组一棵树列完，说明、默认值、范围一眼可见。 | ![模组列表：彩色分组](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/overview-list-zh.jpg) <br> **模组列表** · 已装模组一页看完，悬停显示完整依赖链。 |
+| ![快捷键设置页：键盘与手柄两栏](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/overview-hotkeys-zh.jpg) <br> **快捷键设置** · 所有模组的快捷键集中一页，键盘、手柄两栏。 | ![日志窗口](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/log-window-zh.jpg) <br> **日志窗口** · 实时日志，可筛选、看最近几次启动、导出 ZIP。 |
 
-![Day](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/%E7%99%BD%E5%A4%A91.png)
-*白天样式*
+## ⚙️ 设置页增强
 
-![Demonstration](https://raw.githubusercontent.com/AiAe-156/Peak-ModConfigEnhance/master/%E5%9B%BE%E7%89%87/%E6%BC%94%E7%A4%BA%E8%A7%86%E9%A2%91main.gif)
-*演示图片(可能需要时间加载)*
+- **树形侧栏**：左栏列出模组，选中后展开分区；可搜索（选项名、模组名、分区、键名、说明）、按类型筛选、置顶。
+- **选项格**：紧凑行高，控件旁显示默认值；快捷键重复时出现角标，可跳到对方。
+- **说明面板**：悬停或选中时显示说明、默认值、范围；选中模组时显示名称、版本与简介。
+- **主题**：蓝 / 紫两套，月亮按钮切换；装 TimeTheme 可在夜里自动换紫。
+- 表头「跳转到快捷键设置页」直接进入快捷键设置页。
 
+<details>
+<summary>🎮 设置页手柄操作</summary>
 
-## 依赖
+- <kbd>A</kbd> 确认 / 进入，<kbd>B</kbd> 逐级返回（快速连按两次 <kbd>B</kbd> 退页）。
+- <kbd>LB</kbd> / <kbd>RB</kbd> 切换模组；右摇杆滚动选项。
+- 滑条：按 <kbd>A</kbd> 后左右调值；按键绑定：按 <kbd>A</kbd> 后按住目标键 1 秒写入。
+- Steam 大屏幕 / Deck 下，输入框弹出屏幕键盘。
+
+</details>
+
+## 🧭 模组概览页
+
+**入口**：游戏「设置」菜单里「模组设置」正下方的「模组概览」按钮，分「模组列表」「快捷键设置」「模组设置」三个页签。
+
+### 模组列表
+
+- 列出所有已安装的模组（含已停用的）：启用状态（只读）、名称、版本、作者、简介，以及设置 / 主页 / 文件夹按钮。
+- 悬停显示完整依赖链；角标标出资源包、嵌套模组、散放 DLL 和重复副本。
+- **双击名称或简介即可修改**，保存到当前语言文件，各页面同步显示；留空恢复原文。
+
+### 分组
+
+- 自己的显示分组，最多 3 层、可配颜色，模组列表、快捷键设置页和设置页侧栏共用。**分组只用于显示，不移动任何文件夹。**
+- 「分组管理」编辑名称、上级、颜色、成员；右键分组标题可新建子分组、编辑、删除。
+- **打开铅笔后按住拖动，可排序、拖进分组**；关着时拖动就是滚动。分组标题拖到另一个分组标题的上缘 / 下缘，排到它前面 / 后面；拖到中间成为它的子分组。
+- 子分组排在本组模组的前面。
+- 第一次打开时，可按 `plugins` 的文件夹结构一键生成分组。
+
+### 日志窗口
+
+实时查看 BepInEx 日志、游戏日志和自定义日志；按等级（可多选）/ 模组 / 分组筛选，可搜索、折叠重复报错。「查看」切到最近 3 次启动的历史日志；一键导出 ZIP（不含配置值，已去掉个人路径）。
+
+### 快捷键设置
+
+- 所有模组的快捷键集中一页，键盘 / 手柄两栏，**录完立即写入**该模组的配置。
+- 重复键会标出来（包括与游戏自身操作相同的键），不在意的可以忽略。
+- 双击格子，可为当前语言写一句短说明。
+- **手柄组合键**：只认键盘的快捷键，也能在手柄栏录一个手柄键或组合键（先按住几个键，再按最后一个，最多 4 个）。只在游戏中生效。
+
+> ⚠️ **注意**：先按住的键游戏仍会读到，只有最后一个键被屏蔽。
+
+<details>
+<summary>🎮 概览页手柄操作</summary>
+
+- ↑ / ↓ 选择（按住十字键或左摇杆可连续移动）；<kbd>LB</kbd> / <kbd>RB</kbd> 在工具行按钮间跳。
+- <kbd>RT</kbd> + <kbd>LB</kbd> / <kbd>RB</kbd> 移到页签按钮，再按 <kbd>A</kbd> 切换；<kbd>RT</kbd> + ← / → 翻页；<kbd>RT</kbd> + <kbd>L3</kbd> 全部展开 / 收起。
+- <kbd>B</kbd> 逐级返回，快速连按两次 <kbd>B</kbd> 离开本页。
+- 录制手柄键 / 组合键：先按住几个键，再按最后一个（最多 4 个）；长按 <kbd>B</kbd> 1 秒结束录制。
+
+</details>
+
+## 📦 依赖与兼容
 
 - **必须**：BepInEx 5、PEAKLib.Core、PEAKLib.UI、ModConfig 1.8.2
-- **挂在依赖里，实际可选**：XUnity AutoTranslator——列进依赖只是让模组管理器一起装上；不装也不会出问题，只是翻译工具（补漏翻 / 显示原文 / 词典镜像）置灰，其余功能照常。注意下方提醒：本模组会改它的一项设置。
-- **可选**：TimeTheme（昼夜配色）
+- **可选**：TimeTheme（夜里自动换紫）
+- **不再需要 XUnity AutoTranslator**：翻译已由本模组自己完成。旧版清空过的 XUnity 机翻端点不会自动恢复，需要的话请自行填回。
+- **不要与 In-Game Mod Manager 同时安装**：它已包含本模组的全部功能。同时安装时本模组不加载，只在日志里留一条警告。
 
-## ⚠️ 本模组会改动 XUnity AutoTranslator 的一项设置
+## 📁 文件与语言
 
-XUnity AutoTranslator 保持出厂默认的 GoogleTranslateV2 端点时，会把**所有**界面文字（包括模组设置）丢去在线机翻，结果常常不知所云。因此装有 XUnity 时，本模组的选项 `Disable XUnity machine translation`（**默认开启**；`BepInEx\config\com.aiae.modconfigenhance.cfg` 的 `2. Localization` 分区）每次启动会：
+本模组的文件都在一个文件夹里，只存在本机：
 
-- 清空 `AutoTranslatorConfig.ini` 的 `Endpoint` / `FallbackEndpoint`，让 XUnity 只做词典翻译（本模组的语言文件、你自己的词典），不再机翻；
-- 清空各语言目录下的机翻缓存 `_AutoGeneratedTranslations*.txt`，每个文件旁留一份 `.bak`（只留第一次的）。
+```text
+BepInEx\config\ModConfigEnhance\
+├─ language\              语言文件：en-us.txt  zh-cn.txt  zh-tw.txt（可自己添加）
+├─ export\                「导出翻译」导出的文本
+├─ overview.json          分组、折叠状态、隐藏已停用
+├─ hotkeys.json           忽略的重复提示、收起的模组
+├─ gamepad-combos.json    手柄组合键
+└─ cache\                 日志收藏、最近 3 次启动的日志副本（可随时删除）
+```
 
-**依赖在线机翻的话，请在首次启动前把这个选项改成 `false`**；事后想恢复也可以：关掉选项、把端点填回 `AutoTranslatorConfig.ini`、用 `.bak` 还原缓存。
+**添加语言**：点「导出翻译」→ 把译文填在 `=` 右边 → 以 UTF-8 存成 `小写语言码.txt`（如 `de-de.txt`）放进 `language\` → 点「刷新」后在语言下拉里选中。
 
-
-## 语言文件
-
-目录：`BepInEx\config\ModConfigEnhance\language\`
-
-- 内建 `en-us.txt`、`zh-cn.txt`、`zh-tw.txt`，只建不覆；`_` 前缀文件不进入下拉框
-- **如何添加语言**：
-  
-  - 导出翻译 → 按待翻译文本内部的说明规则，将翻译文本填写在对应键值的 `=` 右边
-  - 以 UTF-8 编码保存 → 重命名为`小写语言码.txt`（如德文 `de-de.txt`）放入 `PEAK\BepInEx\config\ModConfigEnhance\language\de-de.txt`
-  - 点击`「刷新🔃」`按钮后，在左侧的语言切换下拉框中找到你添加的已翻译文本，选中后自动加载。
-  - 修改 `de-de.txt` 后点击`重载翻译`按钮来加载新译文。
-  - 对于补翻的文本，有两种选择。
-    - 补翻完成后放入`language`文件夹中并重命名为 `de-de_*.txt`，其中 `*` 为任意中文/英文字符(我不确认其他语言的字符能否正常识别)。
-    - 将补翻的文本全部复制，粘贴到`de-de.txt`中保存，然后`重载翻译`。
-- **命名规则**：`语言码[-变体][_分包].txt`——`语言码-变体.txt` 是同语言码的独立分组（另一套完整翻译，下拉框单独一项，如 `zh-cn-old.txt`）；`组名_分包.txt` 并入前缀所指的组、按文件名排序后读，后读覆盖先读，冲突记日志。
-- **下拉框显示**：首行 `// display: 名字` 显示「名字 (文件名)」，没写显示文件名本身；多文件组末尾带 `×数量`。同码变体组完全独立——补漏翻只统计当前选中的组。
-- 别名：`zh`=`zh-cn`、`en`=`en-us`；语言码只是文件名开头的 `xx`/`xx-yy`，只管 XUnity 镜像目录与「跟随游戏语言」匹配。
-- 选中语言会同步把 XUnity 切到该语言：词典目录变为 `Translation\<语言码>\Text\`，词条镜像为其中的 `ModConfigEnhance_<语言码>.txt`，`AutoTranslatorConfig.ini` 的 `Language=` 配置项会被同步改写。本模组的开关 `Switch XUnity language with the language file` 可关闭此联动
-- 文件翻译格式同 XUnity 词典：`键=译文`，`//` 注释，`\n` 换行、`\=` 等号、`{0}` 占位符保留，等号左边不可改
-
-## 工具行
+<details>
+<summary>🧰 工具行与翻译文件格式</summary>
 
 | 按钮 | 作用 |
 |---|---|
-| 导出翻译 | 全部界面文本导出到 `export\`（本模组 `MCE_` 块 + 各模组分块，含 manifest 简介） |
-| 补漏翻 | 只列 XUnity 词典未命中的条目（需 XUnityAutoTranslate） |
-| 仅导出已选 | 侧栏出现「导出」复选框列，只导出勾选模组（本模组恒包含） |
-| 显示原文/译文 | 全局原文/译文切换（=XUnityAutoTranslate Alt+T） |
-| 重载翻译 | 重读语言文件并刷新 XUnityAutoTranslate 词典 |
+| 导出翻译 / 补漏翻 | 导出全部 / 尚未翻译的文本到 `export\` |
+| 仅导出已选 | 只导出侧栏勾选的模组 |
+| 显示原文 / 译文 | 在原文和译文之间切换 |
+| 重载翻译 / 刷新 | 重新读取语言文件 / 发现新语言 |
 | 打开目录 | 打开 `config\ModConfigEnhance\` |
-| 语言 ▾ / 刷新 | 按语言分组选择；新增语言点刷新，同语言新增分包点重载翻译 |
 
-## 手柄操作
+改完文件点「重载翻译」生效；补翻的内容可另存为 `de-de_补充.txt`，会自动并入。格式同 XUnity 词典：`键=译文`，`//` 注释，`r:"正则"=译文` 为正则规则。
 
-- **导航**：摇杆/十字键移动焦点；A 确认/进入；B 逐级返回（调值→编辑→捕获→右栏→左栏→退页）
-- **LB/RB**：切换模组
-- **滑条**：A 激活调值态，左右调值，再按 A 或 B 退出；步进为区间 0.5%，按住 1s 后 10 步/秒、3s 后 40 步/秒
-- **下拉框**：A 展开，上下选项，A 选定，B 关闭
-- **输入框**：A 进入编辑，B 退出。无屏幕键盘——打字靠实体键盘或平台 OSK（Deck 用 Steam+X）
-- **按键绑定**：A 进入捕获，按住目标键 1 秒写入；B 取消
+</details>
 
-## 配置项
+<details>
+<summary>📁 个人文件（都在 <code>BepInEx\config\ModConfigEnhance\</code>，只存在本机）</summary>
 
-`BepInEx\config\com.aiae.modconfigenhance.cfg`：
-
-| 分区 | 内容 |
+| 文件 | 内容 |
 |---|---|
-| 1. Layout | 树形侧栏、说明面板、经典棕色配色开关（重启生效） |
-| 2. Localization | 界面本地化、隐藏本地化相关按钮（即时生效）、XUnityAutoTranslate 跟随切换、禁用 XUnityAutoTranslate 机翻（**默认开**，见上方提醒） |
-| 3. State | 语言文件、置顶、导出排除等运行状态（Hidden） |
+| `overview.json` | 分组、折叠状态、隐藏已停用 |
+| `hotkeys.json` | 忽略的重复提示、收起的模组 |
+| `gamepad-combos.json` | 手柄组合键 |
+| `cache\` | 日志收藏、最近 3 次日志副本（可随时删除） |
 
-问题反馈：`2323086800@qq.com` / QQ 群 `1104320838` · GitHub: https://github.com/AiAe-156/Peak-ModConfigEnhance
+</details>
+
+---
+
+💬 **问题反馈**：`2323086800@qq.com` / QQ 群 `1104320838` · GitHub: https://github.com/AiAe-156/Peak-ModConfigEnhance

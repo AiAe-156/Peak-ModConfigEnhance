@@ -25,7 +25,12 @@ internal static class LanguageReadme
         > One-click export of all unlocalized texts, free to translate, multi-language supported — √
         > Name sorting and pinning — √
         > Compatible with TimeTheme's purple night theme — √
+        > A keybindings page for every mod, with free-form controller combos — √
+        > A mod overview: every installed mod at a glance, sorted into your own groups — √
+        > A built-in log viewer with filters and one-click export — √
         > …and other small tweaks
+        >
+        > **Offline and hands-off**: this mod never goes online, and never downloads, installs, deletes, enables or disables any mod.
 
         ## What is in this folder
 
@@ -33,7 +38,12 @@ internal static class LanguageReadme
         |---|---|
         | `language\xx-yy.txt` | A language file: this mod's UI terms + every mod's option texts |
         | `language\en-us.txt` `zh-cn.txt` `zh-tw.txt` | Built-in. Created once, never overwritten; delete to reset |
-        | `export\` | Where "Export texts" and "Untranslated" write their files |
+        | `export\` | Where "Export texts" and "Untranslated" write their files; log exports too when the save dialog cannot open |
+        | `hotkeys.json` | Keybindings page: ignored duplicate warnings, folded mods |
+        | `gamepad-combos.json` | Controller combos recorded on the keybindings page |
+        | `overview.json` | Mod overview: groups, folded groups, Hide disabled |
+        | `smart-grouping-offered` | You answered Not now to smart grouping (delete it to be asked again) |
+        | `cache\` | Log window favourites and copies of the last 3 launches' logs; safe to delete |
         | `readme.md` | This note |
 
         Files starting with `_` never show in the dropdown. Only `.txt` files directly in `language\` are read — subfolders are ignored, so keep backups in a subfolder.
@@ -44,15 +54,84 @@ internal static class LanguageReadme
         |---|---|
         | Tree sidebar | The left column lists mods; the selected mod's sections expand beneath it, options on the right. Pinning supported. |
         | | Search, type filters, a Pin column and an Export column that exports only the ticked mods' texts. |
-        | | Rows with no matches auto-hide while filtering; keybind options get their own filter button. |
+        | | Rows with no matches auto-hide while filtering; pick **Controls** in the type filter to see only keybind options. |
+        | | **Go to keybindings** in the header opens the keybindings page. |
+        | | Search matches option names, mod names, section names, config keys and descriptions. |
+        | Option cells | Compact rows; each option shows its default value beside the control; |
+        | | duplicate keybinds get a corner badge that lists the conflicts and jumps to the other option. |
         | Description panel | A persistent panel at the top right: hover/select an option to see its description, default value, range or choices; |
         | | select a mod/section to see its name, version and summary. Scrollable. |
         | UI localization | All UI text comes from language files; a dropdown on the page switches languages instantly. |
         | Translation tools | Export every text awaiting translation / only the untranslated entries; global original ↔ translation toggle; |
         | | live dictionary reload — add as many languages to your modpack as you like! |
         | Gamepad support | Two-level navigation between the left and right panels: A enters/confirms, B steps back, LB/RB switch mods; |
-        | | sliders need A to arm before adjusting; on a keybind, press A then hold the key for 1 second to write it. |
-        | Theme | Hand-drawn paper look; follows TimeTheme's day/night palette when installed; plus vanilla-style visuals and animations. |
+        | | sliders need A to arm before adjusting; on a keybind, press A then hold the key for 1 second to write it; |
+        | | the right stick scrolls the options; text boxes type on A, with the Steam on-screen keyboard in Big Picture / on Steam Deck. |
+        | Theme | Hand-drawn paper look in two colour themes, blue (the game's settings colours) and purple, switched with the moon button above the search box; can turn purple at night with TimeTheme; plus vanilla-style visuals and animations. |
+        | Mod overview | A separate page with **Mod list**, **Keybindings** and **Mod Settings** tabs. See below. |
+        | Mod list | Every installed mod (disabled ones too) with number, enabled state, name, version, author and description; dependency card on hover; core components; double-click to rename a mod or rewrite its description. |
+        | Groups | Your own display groups (up to 3 levels, with colours), shared by the mod list, the keybindings page and the settings page sidebar; first-time smart grouping from your `plugins` folders. |
+        | Log window | BepInEx log, game log and custom log sources live in game, with level / mod / group filters, search, repeated-error folding and ZIP export. |
+        | Keybindings page | All mods' keybinds on one page, with keyboard and controller columns; a key is written as soon as it is recorded; duplicate warnings; free-form controller combos. See below. |
+
+        ## Mod overview page
+
+        **Where**: the game's **Settings** menu (main menu and in-game pause menu) has a teal **Mod overview** button right below **Mod Settings**. The page has three tabs: **Mod list** (opens first), **Keybindings** and **Mod Settings** (it opens the mod settings page); **Go to keybindings** in the settings page header jumps straight to the Keybindings tab (it replaces the old "show keybinds only" checkbox — the **Controls** entry in the type filter still does that).
+
+        **What this mod never does**: it **never goes online** (no update checks, no store look-ups) and **never downloads, installs, deletes, enables or disables any mod**. The mod list only reads your `plugins` folder; the only files it writes are its own (listed under *Personal files* below) and, when you rename a mod, the selected language file.
+
+        **Toolbar** (shared by both tabs): Refresh, Hide disabled, the pencil (edit mode), Groups, Language and Theme (Hide disabled and the pencil only show on the Mod list); when the window is narrow, what does not fit goes into **More**. **Logs** stays at the right end.
+
+        ### Mod list
+
+        - **Columns**: number, enabled state, name, version, author, description (author and description hide on narrow windows), plus three buttons: **settings** (jumps to that mod's settings page; coming back puts the focus where it was), **homepage** and **folder**.
+        - **Enabled state is read-only**: a mod disabled by another tool shows an empty, greyed-out box, and hovering it tells you why. This mod cannot switch mods on or off.
+        - Badges mark resource packs, nested mods, loose DLLs and duplicate copies. **Hide disabled** hides mods that are not running. Search matches names, package IDs, authors, versions and descriptions.
+        - **Dependency card**: hover a mod to see what it needs and what needs it, as a full chain; it follows the mouse.
+        - **Core components** (loader parts and shared libraries such as MonoDetour) are listed in their own section at the bottom, read-only.
+        - **Rename / describe**: double-click a mod's name or description (on a controller, A on the cell, then **Edit name** / **Edit description**). It is saved at once into the selected language file, so the settings page and the keybindings page show the new name too. Leave it empty to go back to the original.
+        - **Row menu** (right-click, or A / Y on a controller): Edit name, Edit description, Move to group…, View dependencies, Version info.
+
+        ### Groups
+
+        - Groups are only for display: they never move or rename folders. Up to **3 levels**, each with its own colour. The same groups and the same folded / unfolded state appear in the mod list, on the keybindings page and in the settings page sidebar.
+        - **Groups** (toolbar, or the square button next to Refresh on the settings page) opens the group editor: name, parent group, description, colour (with your own custom colours), members, delete. A deleted group's mods and subgroups move up one level.
+        - **Pencil = edit mode**, only for dragging: with it on, drag mods to reorder them or onto a group header to move them, select several with Ctrl / Shift and drag them together, and drag a group header onto another one: its top / bottom edge places it before / after that group (same level), its middle makes it a subgroup. With it off, dragging scrolls the list. Subgroups are listed before a group's own mods.
+        - Without the pencil: **right-click a group header** (Y on a controller) for New subgroup / Edit group / Move to top level / Delete group; double-click a group header to edit it; **Move to group…** in a mod's row menu always works and moves every selected mod.
+        - **Smart grouping**: the first time you open the mod list with no groups yet, this mod offers groups built from the folder layout inside `plugins`. Pick **Group like this** to use it, or **Not now** to never be asked again. It only writes `overview.json`.
+
+        ### Log window
+
+        **Logs** on the toolbar opens a live view of the **BepInEx** log, the **game** log and **custom** log sources (other mods can register their own; this mod's timestamped runtime log is one of them). Filter by level (tick any levels; each level keeps its log colour), mod or group, search, fold repeated errors, expand long stack traces, mark favourite sources, copy lines, and pause or follow the newest lines. **Run** switches between this launch and the logs of the last 3 launches (copies kept in `config\ModConfigEnhance\cache\log-history\`, up to 10 MB per file); filters and search work the same. **Export** writes a ZIP of the logs, optionally with game / BepInEx / mod versions and the mod list (no config values, personal paths removed). **Console** turns the BepInEx console window on or off (this changes `[Logging.Console] Enabled` in `BepInEx.cfg`).
+
+        **Controller (same on both tabs)**: ↑↓ move from mod to mod (hold the D-pad or left stick to keep moving); **LB / RB** jump between the toolbar buttons (Hide disabled, Refresh, pencil, Groups, Language, Theme, Logs…); **RT + LB / RB** move between the Mod list / Keybindings / Mod Settings tab buttons and **A** opens the tab (Mod Settings opens the mod settings page with the focus on **Go to keybindings**); **RT + ←→** page up / down; **RT + L3** fold / unfold all. On the mod list also: **RT + ↑↓** previous / next group, **RT + Y** (or **Y** on a group header) opens the group menu, and **L3** folds the group you are in. D-pad ↑ from the toolbar reaches the tabs; **B** steps back, **press B twice quickly** to leave the page; the View button shows / hides the hint bar.
+
+        ## Keybindings tab
+
+        - **One list for every loaded mod**, one block per mod (sorted by name, each block can be folded). Search by name, mod, description or key; filter All / Duplicate / Unbound.
+        - **Keyboard** and **Controller** columns. Click a keyboard cell and press a key or shortcut (Escape cancels): it is written to the mod's config **as soon as it is recorded** — there is no separate save step. Right-click (Y on a controller) for more: reset to the mod's default, clear, ignore a duplicate warning, edit the short description.
+        - **Mod default** column: the mod's own default; click it to restore it at once. On a controller, for a keybind with no controller default this cell removes the combo recorded there, after a small confirm menu.
+        - **Duplicates**: a key used by more than one option is flagged, including keys that are also one of the game's own controls (pressing it triggers both). You can ignore a warning you are fine with; **More → Restore all duplicate warnings** brings them all back.
+        - **Short description**: double-click the cell (A on a controller) to write a one-line note in the current language; it is saved into the selected language file. Leave it empty to show the option's own description.
+        - The gear button opens that mod's settings page.
+
+        **Controller on this page**
+
+        - Same as the mod list: ↑↓ move, **LB / RB** toolbar, **RT + LB / RB** tab buttons (**A** opens), **RT + ←→** page up / down, **RT + L3** expand / collapse all mods and groups.
+        - Without RT, **L3** folds / unfolds the focused mod or group. D-pad ↑ from the tool row reaches the tab row.
+        - **B** steps back (closes a menu, stops typing, cancels a recording); **press B twice quickly** to leave the page (back to the mod settings page if you came from **Go to keybindings**, otherwise to the game's Settings). The View button shows / hides the hint bar.
+        - In the **Controller** column, press A to record a controller binding. While recording, B cannot leave the page; **hold B for 1 second** to finish recording.
+
+        **Controller combos (free-form)**
+
+        - Most mods only accept keyboard keys. In the Controller column you can give such a keybind a controller button or a combo: **hold any buttons, then press the last one** (up to 4 buttons in total). When you press it, this mod presses that keybind's current keyboard key for the mod. If the mod has its own controller setting, the Controller column edits that setting instead.
+        - Combos work **only in game** (your character is loaded and the pause menu is closed), and never while you are typing in a text box.
+        - **The buttons you hold first still reach the game; only the last button is blocked** for that press. If that gets in the way, Steam Input's action sets or chords can do the same job without this.
+        - A single-button binding on a button you also hold for a combo (e.g. LT alone and LT + A) fires too when you press that button.
+
+        - With groups, the keybindings page shows the same group headers (fold them with a click or L3 on the header; Y / right-click for the group menu).
+
+        **Personal files** (per machine, in `BepInEx\config\ModConfigEnhance\`): `overview.json` (groups, folded groups, Hide disabled), `hotkeys.json` (ignored duplicate warnings, folded mods), `gamepad-combos.json` (controller combos), `smart-grouping-offered` (you said Not now to smart grouping) and the `cache\` folder (log window favourites and copies of the last 3 launches' logs; safe to delete). Log exports land where you choose, or in `export\` when the save dialog cannot open. Keyboard keys themselves are written to each mod's own config.
 
         ## Demo
 
@@ -68,24 +147,24 @@ internal static class LanguageReadme
         ## Dependencies
 
         - **Required**: BepInEx 5, PEAKLib.Core, PEAKLib.UI, ModConfig 1.8.2
-        - **Listed, but optional in practice**: XUnity AutoTranslator — it is in the dependency list so the mod manager installs it alongside, but nothing breaks without it: only the translation tools (Untranslated / Show original / dictionary mirroring) are greyed out, everything else works. See the note below — this mod changes one of its settings.
-        - **Optional**: TimeTheme (day/night palette)
+        - **Not needed**: XUnity AutoTranslator — this mod now translates by itself and no longer reads or changes anything of XUnity's. See the note below if you still have it installed.
+        - **Optional**: TimeTheme (only its day/night state is read, for the PurpleAtNight colour theme)
+        - **Do not install together with In-Game Mod Manager**: it already contains everything this mod does. When both are installed, **this mod does not load at all** and leaves one warning in the BepInEx log; remove one of the two.
 
-        ## ⚠️ This mod changes an XUnity AutoTranslator setting
+        ## XUnity AutoTranslator is no longer used
 
-        With its factory-default endpoint (GoogleTranslateV2), XUnity AutoTranslator sends **every** UI text — mod settings included — to online machine translation, and the results are often nonsense. So when XUnity is installed, this mod's option `Disable XUnity machine translation` (**on by default**; `BepInEx\config\com.aiae.modconfigenhance.cfg`, section `2. Localization`) does the following on every startup:
+        All translation is now done by this mod's own language files — mod names, sections, option names, descriptions and dropdown choices included. XUnity AutoTranslator is no longer a dependency, and this mod no longer switches its language, writes dictionaries into its folder or empties its machine-translation endpoint.
 
-        - empties `Endpoint` / `FallbackEndpoint` in `AutoTranslatorConfig.ini`, so XUnity only applies dictionaries (this mod's language files, your own dictionaries) and no longer machine-translates;
-        - empties the machine-translation caches `_AutoGeneratedTranslations*.txt` in every language folder, keeping a one-time `.bak` copy next to each file.
-
-        **If you rely on live machine translation, set this option to `false` before the first launch** — or turn it off afterwards, put your endpoint back into `AutoTranslatorConfig.ini` and restore the `.bak` files.
+        - Dictionaries that earlier versions wrote into XUnity's folder (`ModConfigEnhance_<code>.txt`) are moved once into `language\_xunity-mirror-backup_<date>\`.
+        - Earlier versions emptied `Endpoint` / `FallbackEndpoint` in `AutoTranslatorConfig.ini` by default. They are **not** restored automatically: to get live machine translation back, fill the endpoint in again and restore the `.bak` copies next to `_AutoGeneratedTranslations*.txt`.
+        - If you keep XUnity with machine translation on, it may still translate texts on this page on its own.
 
 
         ## Language files
 
         Directory: `BepInEx\config\ModConfigEnhance\language\`
 
-        File format is identical to XUnity dictionaries: `key=translation`, `//` comments, `\n` newline, `\=` literal equals, `{0}` `{1}` placeholders kept — **never modify anything left of `=`** (it is the key the dictionary matches character-for-character against on-screen text). The first `MCE_…=…` block is this mod's UI terms (stable IDs — translate the right side only); the `original=translation` lines after it are handed to XUnity AutoTranslator.
+        File format is identical to XUnity dictionaries: `key=translation`, `//` comments, `\n` newline, `\=` literal equals, `{0}` `{1}` placeholders kept — **never modify anything left of `=`** (it is the key the dictionary matches character-for-character against on-screen text). The first `MCE_…=…` block is this mod's UI terms (stable IDs — translate the right side only); the `original=translation` lines after it translate the mods' own texts and are shown by this mod itself. A line `r:"regex"=translation` is a regular-expression rule (same syntax as XUnity dictionaries; `$1` refers to a capture group).
 
         Files starting with `_` stay out of the dropdown; only the top-level `.txt` files are read — keep backups in a subfolder.
 
@@ -99,7 +178,7 @@ internal static class LanguageReadme
         | `code-variant.txt` | **Standalone group of the same language code** — a full, independent translation that may use a completely different style | `zh-cn-old.txt`, `zh-cn-memes.txt` |
         | `group_part.txt` | **Sub-file of a group** — merged into the group named before the `_`, loaded after it in filename order, later entries win | `zh-cn_topup.txt`, `zh-cn-old_fix.txt` |
 
-        - **Language code** = the leading `xx` or `xx-yy` of the filename (`zh-cn-old` → `zh-cn`). It only governs two things: the XUnity mirror folder (`Translation\<code>`) and "Follow game language" matching. Aliases: `zh`=`zh-cn`, `en`=`en-us`.
+        - **Language code** = the leading `xx` or `xx-yy` of the filename (`zh-cn-old` → `zh-cn`). It only governs "Follow game language" matching. Aliases: `zh`=`zh-cn`, `en`=`en-us`.
         - **Dropdown label**: a `// display: <name>` first line shows `name (filename)`; without it, the plain filename is shown. Groups with more than one file get `×count` appended. Examples: `zh-cn-old.txt` (with `// display: Old translation`) → `Old translation (zh-cn-old)`; `zh-cn.txt` (none) → `zh-cn`; `zh-cn-basic.txt` (`// display: 简体中文`) + `zh-cn-basic_ModB.txt` → `简体中文 (zh-cn-basic) ×2`.
         - **Loaded-files list**: after picking a group, the panel lists each file with its own display name, e.g. `zh-cn-basic.txt (简体中文)`, `zh-cn-basic_ModB.txt (Modb)`.
         - **Tooltip emphasis**: in `MCE_TIP_*` hover-tooltips, text inside `` `…` `` or `“…”` renders in the title color (backticks hidden, curly quotes kept).
@@ -133,27 +212,28 @@ internal static class LanguageReadme
         ### After picking a language (no restart)
 
         - This mod's UI switches at once; the description panel lists every loaded filename in load order (with each file's display name).
-        - XUnity AutoTranslator switches to that group's language code: its dictionary folder becomes `Translation\<code>\Text\`, the translations are written there as `ModConfigEnhance_<code>.txt`, dictionaries reload, texts without a translation show the original, and `Language=` in `AutoTranslatorConfig.ini` is updated for the next start. Toggle this link with this mod's **Switch XUnity language with the language file** option.
+        - Mod texts shown by this mod (sidebar, description panel, settings page) switch to that group's translations at once; texts without a translation show the original.
 
         ## Toolbar
 
         | Button | What it does |
         |---|---|
         | Export texts | Exports all UI texts to `export\` (this mod's `MCE_` block + one block per mod, manifest summaries included) |
-        | Untranslated | Exports only the entries the XUnity dictionary doesn't cover (requires XUnity AutoTranslator) |
+        | Untranslated | Exports only the entries the current language group doesn't cover yet (exact lines and `r:` rules both count) |
         | Selected only | Adds an "Export" checkbox column to the sidebar — only the ticked mods get exported (this mod is always included) |
-        | Show original / Show translated | Global original ↔ translation toggle (same as XUnity's Alt+T) |
-        | Reload texts | Re-reads the language files and refreshes XUnity's dictionaries |
+        | Show original / Show translated | Switches the mod texts shown by this mod between original and translation |
+        | Reload texts | Re-reads the language files from disk |
         | Open folder | Opens `config\ModConfigEnhance\` |
         | Language ▾ / Refresh | Pick a language group; **Refresh** after adding a new language, **Reload texts** after adding a sub-file to an existing one |
 
         ## Gamepad controls
 
-        - **Navigation**: stick / D-pad moves focus; A confirms/enters; B steps back level by level (slider → editing → capture → right panel → left panel → leave page)
+        - **Navigation**: stick / D-pad moves focus; A confirms/enters; B steps back level by level (slider → editing → capture → right panel → left panel → leave page; leaving takes two quick presses of B)
         - **LB/RB**: switch mods
+        - **Right stick**: scrolls the options on the right, faster the longer it is held
         - **Sliders**: A arms value mode, left/right adjust, A or B exits; each step is 0.5% of the range — hold for 1s to auto-repeat at 10 steps/s, 3s for 40 steps/s
         - **Dropdowns**: A opens, up/down to move, A picks, B closes
-        - **Input fields**: A starts editing, B exits. No on-screen keyboard — type on a physical keyboard or the platform OSK (Steam+X on Steam Deck)
+        - **Input fields**: A starts editing, B only stops editing. In Steam Big Picture or on Steam Deck, A opens the Steam on-screen keyboard; elsewhere type on a physical keyboard
         - **Keybinds**: A starts capture, hold the target key for 1 second to write it; B cancels
 
         ## Config file
@@ -162,8 +242,8 @@ internal static class LanguageReadme
 
         | Section | Contents |
         |---|---|
-        | 1. Layout | Tree sidebar and description panel toggles (restart required) |
-        | 2. Localization | UI localization, hide localization buttons (instant), make XUnity follow the chosen language file, disable XUnity machine translation (**on by default** — see the note above) |
+        | 1. Layout | Tree sidebar and description panel toggles (restart required), colour theme: Blue / Purple / PurpleAtNight (instant) |
+        | 2. Localization | UI localization, hide localization buttons (instant) |
         | 3. State | Runtime state: language file, pins, export exclusions etc. (Hidden) |
 
         ## Extra details
@@ -192,7 +272,12 @@ internal static class LanguageReadme
         > 一键导出所有非本地化语言并自由发挥翻译，支持多重语言 - √
         > 名称排序和置顶功能 - √
         > 兼容 TimeTheme 夜间幽紫主题 - √
+        > 所有模组快捷键集中一页设置，手柄组合键自由组合 - √
+        > 模组概览：已装模组一览，按自己的分组整理 - √
+        > 内置日志窗口，可筛选、一键导出 - √
         > 以及其他小改动……
+        >
+        > **不联网、不动模组**：本模组从不联网，也从不下载、安装、删除、启用或停用任何模组。
 
         ## 这个目录放什么
 
@@ -200,7 +285,12 @@ internal static class LanguageReadme
         |---|---|
         | `language\xx-yy.txt` | 语言文件：本模组界面词条 + 所有模组的选项文本 |
         | `language\en-us.txt` `zh-cn.txt` `zh-tw.txt` | 内建三种。只建不覆，可随意改；删掉即恢复默认 |
-        | `export\` | 「导出翻译」「补漏翻」写文件的地方 |
+        | `export\` | 「导出翻译」「补漏翻」写文件的地方；保存对话框打不开时，导出的日志也放这里 |
+        | `hotkeys.json` | 快捷键设置页：忽略的重复提示、收起的模组 |
+        | `gamepad-combos.json` | 快捷键设置页录的手柄组合键 |
+        | `overview.json` | 模组概览：分组、折叠的分组、隐藏已停用 |
+        | `smart-grouping-offered` | 智能分组选过「不用了」（删掉后会再问） |
+        | `cache\` | 日志窗口的收藏和最近 3 次启动的日志副本，可随时删除 |
         | `readme.md` | 本说明 |
 
         `_` 开头的文件不进下拉框；只读 `language\` 当前层的 `.txt`，子目录被忽略——备份请放进子目录。
@@ -211,15 +301,84 @@ internal static class LanguageReadme
         |---|---|
         | 树形侧栏 | 左栏显示模组列表，选中模组会在其下方展开分区。可以置顶右侧为选项。 |
         | | 支持搜索、类型筛选、置顶选中列、仅导出勾选列的翻译文本。 |
-        | | 筛选时无匹配项的行自动隐藏；单独为按键设置添加了筛选按钮。 |
+        | | 筛选时无匹配项的行自动隐藏；类型筛选里选「按键」只看按键设置。 |
+        | | 表头「跳转到快捷键设置页」打开快捷键设置页。 |
+        | | 搜索匹配选项名、模组名、分区名、配置键名和说明文字。 |
+        | 选项格 | 紧凑行高；每个选项在控件旁显示默认值； |
+        | | 快捷键重复时按键框角上出现角标，可查看与谁重复并跳到对方。 |
         | 说明面板 | 右上方常驻面板：悬停/选中选项时显示其说明、默认值、范围或可选值； |
         | | 选中模组/分区时显示该模组名称、版本与简介。可滚动 |
         | 界面本地化 | 全部界面文字走语言文件，页面内下拉实时切换语言 |
         | 翻译工具 | 导出全部待翻文本/导出未翻条目、原文/译文全局切换； |
         | | 支持实时重载词典、为你的整合包添加多重语言！ |
         | 手柄支持 | 左栏↔右栏两级导航，A 进入/确认、B 逐级返回、LB/RB 切模组； |
-        | | 滑条按 A 激活后调值；按键绑定按 A 后长按 1 秒写入 |
-        | 主题 | 手绘纸面风格；装 TimeTheme 后随昼夜配色；还有适配原本风格的视觉风格和动效 |
+        | | 滑条按 A 激活后调值；按键绑定按 A 后长按 1 秒写入； |
+        | | 右摇杆滚动选项列表；文本框按 A 输入，Steam 大屏幕 / Deck 下弹出 Steam 屏幕键盘 |
+        | 主题 | 手绘纸面风格，蓝色（游戏设置菜单配色）与紫色两套主题，用搜索框上方的月亮按钮切换；装 TimeTheme 后可在夜里自动换紫色；还有适配原本风格的视觉风格和动效 |
+        | 模组概览 | 独立页面，分「模组列表」「快捷键设置」「模组设置」三个页签。详见下方 |
+        | 模组列表 | 列出所有已安装的模组（含已停用的）：序号、启用状态、名称、版本、作者、简介；悬停看依赖关系；基础组件区；双击改模组名或简介 |
+        | 分组 | 自己的显示分组（最多 3 层，可配颜色），模组列表、快捷键设置页、设置页侧栏共用；首次可按 `plugins` 文件夹结构智能分组 |
+        | 日志窗口 | 游戏内实时查看 BepInEx 日志、游戏日志和自定义日志，可按等级 / 模组 / 分组筛选、搜索、折叠重复报错、导出 ZIP |
+        | 快捷键设置页 | 所有模组的快捷键集中一页，键盘 / 手柄两栏；录完立即写入；重复键提示；手柄组合键自由组合。详见下方 |
+
+        ## 模组概览页
+
+        **入口**：游戏「设置」菜单（主菜单和局内暂停菜单都有）里，「模组设置」按钮正下方的青绿色「模组概览」按钮。页面分「模组列表」（默认打开）、「快捷键设置」「模组设置」三个页签（「模组设置」直接打开模组设置页）；模组设置页表头的「跳转到快捷键设置页」直接进入「快捷键设置」（它取代了原来的「只显示快捷键选项」复选框；想在设置页只看按键，用类型筛选里的「按键」）。
+
+        **本模组不会做的事**：**从不联网**（没有更新检查，也不查商店），**从不下载、安装、删除、启用或停用任何模组**。模组列表只读取 `plugins` 文件夹；写入的只有本模组自己的文件（见下方「个人文件」），以及改模组名时当前选中的语言文件。
+
+        **工具行**（两个页签共用）：刷新、隐藏已停用、铅笔（编辑模式）、分组管理、语言、主题（「隐藏已停用」和铅笔只在模组列表显示）；窗口窄时放不下的收进「更多」。「日志」固定在最右端。
+
+        ### 模组列表
+
+        - **列**：序号、启用状态、名称、版本、作者、简介（窗口窄时隐藏作者和简介），另有三个按钮：**设置**（跳到该模组的设置页，回来时焦点回到原处）、**主页**、**文件夹**。
+        - **启用状态只读**：被其他工具停用的模组显示为灰色空框，悬停可看原因。本模组不能启停模组。
+        - 角标标出资源包、嵌套模组、散放 DLL 和重复副本。「隐藏已停用」隐藏没在运行的模组。搜索匹配名称、包 ID、作者、版本和简介。
+        - **依赖卡**：悬停在模组上，显示它依赖谁、谁依赖它（完整依赖链），跟随鼠标。
+        - **基础组件**（加载器组件和 MonoDetour 等公共库）单独列在底部，只读。
+        - **改名 / 改简介**：双击模组名称或简介（手柄在格子上按 A，选「编辑名称 / 编辑简介」）。立即保存到当前选中的语言文件，设置页和快捷键设置页也会显示新名字。留空保存即恢复原文。
+        - **行菜单**（右键，手柄按 A / Y）：编辑名称、编辑简介、移动到分组…、查看模组依赖项、版本信息。
+
+        ### 分组
+
+        - 分组只用于显示，不会移动或改名任何文件夹。最多 **3 层**，每个分组可以有自己的颜色。模组列表、快捷键设置页和设置页侧栏显示同一套分组和同一份折叠状态。
+        - 「分组管理」（工具行，或设置页刷新钮旁的方形按钮）打开分组编辑窗口：名称、上级分组、描述、颜色（可添加自定义颜色）、成员、删除。删除分组后，其中的模组和子分组上移一层。
+        - **铅笔 = 编辑模式，只管拖动**：开着时拖动模组排序、拖到分组标题上换组、Ctrl / Shift 多选后一起拖、把分组标题拖到另一个分组标题上（上缘 / 下缘 = 排到它前面 / 后面、同一层，中间 = 成为它的子分组）；关着时拖动就是滚动列表。子分组排在本组模组的前面。
+        - 不开铅笔也可以：**右键分组标题**（手柄按 Y）有新建子分组 / 编辑分组 / 移到顶层 / 删除分组；双击分组标题编辑该分组；模组行菜单的「移动到分组…」随时可用，会移动所有已选的模组。
+        - **智能分组**：第一次打开模组列表且还没有分组时，本模组会按 `plugins` 里的文件夹结构建议一套分组。选「按此分组」采用，选「不用了」以后不再询问。只写 `overview.json`。
+
+        ### 日志窗口
+
+        工具行的「日志」打开实时日志：**BepInEx** 日志、**游戏**日志和**自定义**日志来源（其他模组可以注册自己的来源，本模组带时间戳的运行日志就是其中之一）。可按等级（可多选，等级名与日志同色）、模组或分组筛选，搜索，折叠重复报错，展开长调用栈，收藏常看的来源，复制，暂停或跟随最新一行。「查看」可切到最近 3 次启动的历史日志（副本存在 `config\ModConfigEnhance\cache\log-history\`，单个文件上限 10 MB），筛选、搜索照常。**导出**生成日志 ZIP，可选附带游戏 / BepInEx / 模组版本与模组清单（不含任何配置值，个人路径会被去掉）。「控制台」开关 BepInEx 控制台窗口（会改 `BepInEx.cfg` 的 `[Logging.Console] Enabled`）。
+
+        **手柄操作（两个页签相同）**：↑↓ 逐个选模组（按住十字键或左摇杆可连续移动）；**LB / RB** 在工具行的按钮间跳（隐藏已停用、刷新、铅笔、分组管理、语言、主题、日志……）；**RT + LB / RB** 在「模组列表 / 快捷键设置 / 模组设置」三个页签按钮间移动，按 **A** 切换（「模组设置」打开模组设置页，焦点停在表头「跳转到快捷键设置页」）；**RT + ←→** 翻页；**RT + L3** 全部折叠 / 展开。模组列表另有：**RT + ↑↓** 上 / 下一个分组，**RT + Y**（或在分组标题上按 **Y**）打开分组菜单，**L3** 折叠所在分组。在工具行按十字键 ↑ 到页签行；**B** 逐级返回，**快速连按两次 B** 离开本页；View 键显示 / 隐藏底部按键提示。
+
+        ## 快捷键设置页签
+
+        - **所有已加载模组的快捷键一页列完**，按模组分块（按名称排序，每块可收起）。可搜索名称、模组、说明或按键，筛选「全部 / 重复 / 未绑定」。
+        - **键盘 / 手柄两栏**。点击键盘格后按下按键或组合键（ESC 取消），**录完立即写进该模组的配置**，没有另外的保存步骤。右键（手柄按 Y）打开更多操作：恢复模组默认、清空、忽略重复提示、编辑短说明。
+        - **模组默认**栏：显示模组自带的默认键，点击立即恢复。用手柄时，没有手柄默认键的快捷键在这一格按 A 是移除录好的组合键，会先弹出小菜单确认。
+        - **重复键**：同一个键被多个选项使用时会标出来，也包括与游戏自己的操作相同的键（按下时两边都会触发）。不在意的提示可以忽略；「更多 → 恢复全部冲突提醒」可全部找回。
+        - **短说明**：双击格子（手柄按 A）为当前语言写一句短说明，保存在当前选中的语言文件里；留空则显示配置项原本的说明。
+        - 齿轮按钮打开该模组的设置页。
+
+        **本页手柄操作**
+
+        - 与模组列表相同：↑↓ 移动，**LB / RB** 跳工具行，**RT + LB / RB** 移到页签按钮（**A** 切换），**RT + ←→** 翻页，**RT + L3** 全部展开 / 收起（模组与分组）。
+        - 不按 RT 时 **L3** 收起 / 展开焦点所在的模组或分组。在工具行按十字键 ↑ 到页签行。
+        - **B** 逐级返回（关菜单、退出输入、取消录制）；**快速连按两次 B** 离开本页（从「跳转到快捷键设置页」进来的回到模组设置页，否则回到游戏设置）。View 键显示 / 隐藏底部按键提示。
+        - 在**手柄**栏按 A 录制手柄按键。录制期间 B 不会离开页面，**长按 B 1 秒**结束录制。
+
+        **手柄组合键（自由组合）**
+
+        - 大多数模组的快捷键只认键盘。可以在手柄栏给这类快捷键录一个手柄键或组合键：**先按住任意几个键，再按最后一个键**（连同最后一个最多 4 个键）。按下时，本模组替该模组按下这个快捷键当前的键盘键。模组本身就有手柄按键设置的，手柄栏直接改那个设置。
+        - 组合键**只在游戏中生效**（角色已加载、没开暂停菜单），在输入框里打字时也不生效。
+        - **先按住的那些键游戏仍会读到，只有最后一个键在这一下被屏蔽**。介意的话，可以改用 Steam 输入自带的动作集或组合键（和弦）实现同样的效果。
+        - 如果某个键单独绑了快捷键、又是别的组合键里先按住的键（例如单独的 LT 和 LT + A），按下它时单键的那个也会触发。
+
+        - 有分组时，快捷键设置页显示同样的分组标题（点击或在标题上按 L3 折叠；Y / 右键打开分组菜单）。
+
+        **个人文件**（本机，`BepInEx\config\ModConfigEnhance\` 下）：`overview.json`（分组、折叠的分组、隐藏已停用）、`hotkeys.json`（忽略的重复提示、收起的模组）、`gamepad-combos.json`（手柄组合键）、`smart-grouping-offered`（智能分组选过「不用了」）以及 `cache\` 文件夹（日志窗口的收藏和最近 3 次启动的日志副本，可随时删除）。导出的日志放在你选的位置，保存对话框打不开时放进 `export\`。键盘按键本身写在各模组自己的配置文件里。
 
         ## 演示
 
@@ -235,24 +394,24 @@ internal static class LanguageReadme
         ## 依赖
 
         - **必须**：BepInEx 5、PEAKLib.Core、PEAKLib.UI、ModConfig 1.8.2
-        - **挂在依赖里，实际可选**：XUnity AutoTranslator——列进依赖只是让模组管理器一起装上；不装也不会出问题，只是翻译工具（补漏翻 / 显示原文 / 词典镜像）置灰，其余功能照常。注意下方提醒：本模组会改它的一项设置。
-        - **可选**：TimeTheme（昼夜配色）
+        - **不再需要**：XUnity AutoTranslator——翻译已由本模组自己完成，不再读取或改动 XUnity 的任何东西。仍装着它的话见下方说明。
+        - **可选**：TimeTheme（只读取它的昼夜状态，供「夜里自动紫色」主题使用）
+        - **不要与 In-Game Mod Manager（游戏内模组管理器）同时安装**：它已经包含本模组的全部功能。两者同时安装时，**本模组整个不加载**，只在 BepInEx 日志里留一条警告；请删掉其中一个。
 
-        ## ⚠️ 本模组会改动 XUnity AutoTranslator 的一项设置
+        ## 不再使用 XUnity AutoTranslator
 
-        XUnity AutoTranslator 保持出厂默认的 GoogleTranslateV2 端点时，会把**所有**界面文字（包括模组设置）丢去在线机翻，结果常常不知所云。因此装有 XUnity 时，本模组的选项 `Disable XUnity machine translation`（**默认开启**；`BepInEx\config\com.aiae.modconfigenhance.cfg` 的 `2. Localization` 分区）每次启动会：
+        翻译现在全部由本模组自己的语言文件完成，包括模组名称、分区、选项名、说明和下拉选项。XUnity AutoTranslator 不再是依赖，本模组也不再切换它的语言、往它的目录写词典或清空它的机翻端点。
 
-        - 清空 `AutoTranslatorConfig.ini` 的 `Endpoint` / `FallbackEndpoint`，让 XUnity 只做词典翻译（本模组的语言文件、你自己的词典），不再机翻；
-        - 清空各语言目录下的机翻缓存 `_AutoGeneratedTranslations*.txt`，每个文件旁留一份 `.bak`（只留第一次的）。
-
-        **依赖在线机翻的话，请在首次启动前把这个选项改成 `false`**；事后想恢复也可以：关掉选项、把端点填回 `AutoTranslatorConfig.ini`、用 `.bak` 还原缓存。
+        - 旧版本写进 XUnity 目录的词典（`ModConfigEnhance_<码>.txt`）会一次性移到 `language\_xunity-mirror-backup_<日期>\`。
+        - 旧版本默认清空过 `AutoTranslatorConfig.ini` 的 `Endpoint` / `FallbackEndpoint`，**不会自动恢复**：想用回在线机翻，请自行把端点填回去，并用 `_AutoGeneratedTranslations*.txt` 旁的 `.bak` 还原缓存。
+        - 继续装着 XUnity 并开着机翻时，它仍可能自行翻译本页面上的文字。
 
 
         ## 语言文件
 
         目录：`BepInEx\config\ModConfigEnhance\language\`
 
-        文件格式同 XUnity 词典：`键=译文`，`//` 注释，`\n` 换行、`\=` 等号、`{0}` `{1}` 占位符原样保留——**等号左边一个字符都别动**（它是词典逐字匹配屏幕文字的键，改动就永远对不上）。第一段 `MCE_…=…` 是本模组界面词条（键为稳定 ID，只翻右边），之后的 `原文=译文` 由各模组交给 XUnity 使用。
+        文件格式同 XUnity 词典：`键=译文`，`//` 注释，`\n` 换行、`\=` 等号、`{0}` `{1}` 占位符原样保留——**等号左边一个字符都别动**（它是词典逐字匹配屏幕文字的键，改动就永远对不上）。第一段 `MCE_…=…` 是本模组界面词条（键为稳定 ID，只翻右边），之后的 `原文=译文` 是各模组自己的文字，由本模组直接显示。`r:"正则"=译文` 是正则规则（写法同 XUnity 词典，`$1` 引用捕获组）。
 
         `_` 开头的文件不进下拉框；只读当前层的 `.txt`，子目录被忽略——备份请放进子目录。
 
@@ -266,7 +425,7 @@ internal static class LanguageReadme
         | `语言码-变体.txt` | **同语言码的独立分组**：与基础组平起平坐，各自一套完整翻译，风格可以完全不同 | `zh-cn-old.txt`、`zh-cn-整活版.txt` |
         | `组名_分包.txt` | **组内分包**：并入前缀所指的组，按文件名排序追加加载、后者覆盖前者 | `zh-cn_补翻.txt`、`zh-cn-old_修正.txt` |
 
-        - **语言码** = 文件名开头的 `xx` 或 `xx-yy`（`zh-cn-old` 的码是 `zh-cn`）。它只管两件事：XUnity 镜像目录（`Translation\<码>`）和「跟随游戏语言」匹配。别名：`zh`=`zh-cn`、`en`=`en-us`。
+        - **语言码** = 文件名开头的 `xx` 或 `xx-yy`（`zh-cn-old` 的码是 `zh-cn`）。它只管「跟随游戏语言」匹配。别名：`zh`=`zh-cn`、`en`=`en-us`。
         - **下拉框显示**：文件首行写了 `// display: 名字` 就显示「名字 (文件名)」，没写就显示文件名本身；组内多于一个文件时末尾带 `×数量`。例：`zh-cn-old.txt`（写了 `// display: 旧版翻译`）→ `旧版翻译 (zh-cn-old)`；`zh-cn.txt`（没写）→ `zh-cn`；`zh-cn-basic.txt`（`// display: 简体中文`）+ `zh-cn-basic_ModB.txt` 一组两个 → `简体中文 (zh-cn-basic) ×2`。
         - **说明框加载列表**：选中一组后按加载顺序列出每个文件和它自己的显示名，如 `zh-cn-basic.txt（简体中文）`、`zh-cn-basic_ModB.txt（Modb）`。
         - **注释强调**：`MCE_TIP_*` 悬停注释里，`` `…` `` 或 `“…”` 包住的文字用标题色强调（反引号本身不显示，弯引号保留）。
@@ -300,27 +459,28 @@ internal static class LanguageReadme
         ### 选中语言后（无需重启）
 
         - 本模组界面立刻切换；说明面板按实际加载顺序列出全部文件名（带各自显示名）。
-        - XUnity 同步切到该组的语言码：词典目录变为 `Translation\<码>\Text\`，词条镜像为其中的 `ModConfigEnhance_<码>.txt`，`AutoTranslatorConfig.ini` 的 `Language=` 同步改写。本模组开关 `Switch XUnity language with the language file` 可关闭此联动。
+        - 本模组负责显示的模组文字（侧栏、说明面板、设置页）立即换成该组的译文；没有译文的显示原文。
 
         ## 工具行
 
         | 按钮 | 作用 |
         |---|---|
         | 导出翻译 | 全部界面文本导出到 `export\`（本模组 `MCE_` 块 + 各模组分块，含 manifest 简介） |
-        | 补漏翻 | 只列 XUnity 词典未命中的条目（需 XUnityAutoTranslate） |
+        | 补漏翻 | 只列当前语言组还没覆盖的条目（整句译文和 `r:` 正则规则都算已翻） |
         | 仅导出已选 | 侧栏出现「导出」复选框列，只导出勾选模组（本模组恒包含） |
-        | 显示原文/译文 | 全局原文/译文切换（=XUnityAutoTranslate Alt+T） |
-        | 重载翻译 | 重读语言文件并刷新 XUnityAutoTranslate 词典 |
+        | 显示原文/译文 | 把本模组显示的模组文字在原文和译文之间切换 |
+        | 重载翻译 | 从磁盘重新读取语言文件 |
         | 打开目录 | 打开 `config\ModConfigEnhance\` |
         | 语言 ▾ / 刷新 | 按语言分组选择；新增语言点刷新，同语言新增分包点重载翻译 |
 
         ## 手柄操作
 
-        - **导航**：摇杆/十字键移动焦点；A 确认/进入；B 逐级返回（调值→编辑→捕获→右栏→左栏→退页）
+        - **导航**：摇杆/十字键移动焦点；A 确认/进入；B 逐级返回（调值→编辑→捕获→右栏→左栏→退页；退页需快速连按两次 B）
         - **LB/RB**：切换模组
+        - **右摇杆**：滚动右侧选项列表，按住越久越快
         - **滑条**：A 激活调值态，左右调值，再按 A 或 B 退出；步进为区间 0.5%，按住 1s 后 10 步/秒、3s 后 40 步/秒
         - **下拉框**：A 展开，上下选项，A 选定，B 关闭
-        - **输入框**：A 进入编辑，B 退出。无屏幕键盘——打字靠实体键盘或平台 OSK（Deck 用 Steam+X）
+        - **输入框**：A 进入编辑，B 只退出编辑。Steam 大屏幕模式或 Steam Deck 上按 A 弹出 Steam 屏幕键盘，其他情况用实体键盘输入
         - **按键绑定**：A 进入捕获，按住目标键 1 秒写入；B 取消
 
         ## 配置项
@@ -329,8 +489,8 @@ internal static class LanguageReadme
 
         | 分区 | 内容 |
         |---|---|
-        | 1. Layout | 树形侧栏、说明面板开关（重启生效） |
-        | 2. Localization | 界面本地化、隐藏本地化相关按钮（即时生效）、XUnityAutoTranslate 跟随切换、禁用 XUnityAutoTranslate 机翻（**默认开**，见上方提醒） |
+        | 1. Layout | 树形侧栏、说明面板开关（重启生效），配色主题：蓝色 / 紫色 / 夜里自动紫色（即时生效） |
+        | 2. Localization | 界面本地化、隐藏本地化相关按钮（即时生效） |
         | 3. State | 语言文件、置顶、导出排除等运行状态（Hidden） |
 
         ## 其他细节
@@ -359,7 +519,12 @@ internal static class LanguageReadme
         > 一鍵匯出所有未本地化語言並自由發揮翻譯，支援多重語言 - √
         > 名稱排序與置頂功能 - √
         > 相容 TimeTheme 夜間幽紫主題 - √
+        > 所有模組快捷鍵集中一頁設定，手把組合鍵自由組合 - √
+        > 模組概覽：已裝模組一覽，按自己的分組整理 - √
+        > 內建日誌視窗，可篩選、一鍵匯出 - √
         > 以及其他小改動……
+        >
+        > **不連網、不動模組**：本模組從不連網，也從不下載、安裝、刪除、啟用或停用任何模組。
 
         ## 這個目錄放什麼
 
@@ -367,7 +532,12 @@ internal static class LanguageReadme
         |---|---|
         | `language\xx-yy.txt` | 語言檔案：本模組介面詞條 + 所有模組的設定文字 |
         | `language\en-us.txt` `zh-cn.txt` `zh-tw.txt` | 內建三種。只建不覆，可隨意改；刪掉即恢復預設 |
-        | `export\` | 「導出翻譯」「補漏翻」寫檔案的地方 |
+        | `export\` | 「導出翻譯」「補漏翻」寫檔案的地方；儲存對話框打不開時，匯出的日誌也放這裡 |
+        | `hotkeys.json` | 快捷鍵設定頁：忽略的重複提示、收起的模組 |
+        | `gamepad-combos.json` | 快捷鍵設定頁錄的手把組合鍵 |
+        | `overview.json` | 模組概覽：分組、摺疊的分組、隱藏已停用 |
+        | `smart-grouping-offered` | 智慧分組選過「不用了」（刪掉後會再問） |
+        | `cache\` | 日誌視窗的收藏和最近 3 次啟動的日誌副本，可隨時刪除 |
         | `readme.md` | 本說明 |
 
         `_` 開頭的檔案不進下拉框；只讀 `language\` 目前層級的 `.txt`，子目錄被忽略——備份請放進子目錄。
@@ -378,15 +548,84 @@ internal static class LanguageReadme
         |---|---|
         | 樹形側欄 | 左欄顯示模組列表，選中模組會在其下方展開分類。可以置頂右側為選項。 |
         | | 支援搜尋、類型篩選、置頂選中列、僅匯出勾選列的翻譯文字。 |
-        | | 篩選時無匹配項的行自動隱藏；單獨為按鍵設定加入了篩選按鈕。 |
+        | | 篩選時無匹配項的行自動隱藏；類型篩選裡選「按鍵」只看按鍵設定。 |
+        | | 表頭「跳轉到快捷鍵設定頁」打開快捷鍵設定頁。 |
+        | | 搜尋匹配選項名、模組名、分類名、設定鍵名與說明文字。 |
+        | 選項格 | 緊湊行高；每個選項在控制項旁顯示預設值； |
+        | | 快捷鍵重複時按鍵框角上出現角標，可查看與誰重複並跳到對方。 |
         | 說明面板 | 右上方常駐面板：懸停/選中選項時顯示其說明、預設值、範圍或可選值； |
         | | 選中模組/分類時顯示該模組名稱、版本與簡介。可捲動 |
         | 介面本地化 | 全部介面文字走語言檔案，頁面內下拉即時切換語言 |
         | 翻譯工具 | 匯出全部待翻文字/匯出未翻條目、原文/譯文全域切換； |
         | | 支援即時重載詞典、為你的整合包加入多重語言！ |
         | 手把支援 | 左欄↔右欄兩級導航，A 進入/確認、B 逐級返回、LB/RB 切模組； |
-        | | 滑條按 A 啟用後調值；按鍵綁定按 A 後長按 1 秒寫入 |
-        | 主題 | 手繪紙面面風格；裝 TimeTheme 後隨晝夜配色；還有適配原本風格的視覺風格與動效 |
+        | | 滑條按 A 啟用後調值；按鍵綁定按 A 後長按 1 秒寫入； |
+        | | 右搖桿捲動選項列表；文字框按 A 輸入，Steam 大螢幕 / Deck 下彈出 Steam 螢幕鍵盤 |
+        | 主題 | 手繪紙面風格，藍色（遊戲設定選單配色）與紫色兩套主題，用搜尋框上方的月亮按鈕切換；裝 TimeTheme 後可在夜裡自動換紫色；還有適配原本風格的視覺風格與動效 |
+        | 模組概覽 | 獨立頁面，分「模組列表」「快捷鍵設定」「模組設定」三個頁籤。詳見下方 |
+        | 模組列表 | 列出所有已安裝的模組（含已停用的）：序號、啟用狀態、名稱、版本、作者、簡介；懸停看依賴關係；基礎組件區；雙擊改模組名或簡介 |
+        | 分組 | 自己的顯示分組（最多 3 層，可配顏色），模組列表、快捷鍵設定頁、設定頁側欄共用；首次可按 `plugins` 資料夾結構智慧分組 |
+        | 日誌視窗 | 遊戲內即時檢視 BepInEx 日誌、遊戲日誌和自訂日誌，可按等級 / 模組 / 分組篩選、搜尋、摺疊重複錯誤、匯出 ZIP |
+        | 快捷鍵設定頁 | 所有模組的快捷鍵集中一頁，鍵盤 / 手把兩欄；錄完立即寫入；重複鍵提示；手把組合鍵自由組合。詳見下方 |
+
+        ## 模組概覽頁
+
+        **入口**：遊戲「設定」選單（主選單和局內暫停選單都有）裡，「模組設定」按鈕正下方的青綠色「模組概覽」按鈕。頁面分「模組列表」（預設打開）、「快捷鍵設定」「模組設定」三個頁籤（「模組設定」直接開啟模組設定頁）；模組設定頁表頭的「跳轉到快捷鍵設定頁」直接進入「快捷鍵設定」（它取代了原來的「只顯示快捷鍵選項」複選框；想在設定頁只看按鍵，用類型篩選裡的「按鍵」）。
+
+        **本模組不會做的事**：**從不連網**（沒有更新檢查，也不查商店），**從不下載、安裝、刪除、啟用或停用任何模組**。模組列表只讀取 `plugins` 資料夾；寫入的只有本模組自己的檔案（見下方「個人檔案」），以及改模組名時目前選中的語言檔案。
+
+        **工具列**（兩個頁籤共用）：重新整理、隱藏已停用、鉛筆（編輯模式）、分組管理、語言、主題（「隱藏已停用」和鉛筆只在模組列表顯示）；視窗窄時放不下的收進「更多」。「日誌」固定在最右端。
+
+        ### 模組列表
+
+        - **欄位**：序號、啟用狀態、名稱、版本、作者、簡介（視窗窄時隱藏作者和簡介），另有三個按鈕：**設定**（跳到該模組的設定頁，回來時焦點回到原處）、**主頁**、**資料夾**。
+        - **啟用狀態唯讀**：被其他工具停用的模組顯示為灰色空框，懸停可看原因。本模組不能啟停模組。
+        - 角標標出資源包、巢狀模組、散放 DLL 和重複副本。「隱藏已停用」隱藏沒在執行的模組。搜尋匹配名稱、套件 ID、作者、版本和簡介。
+        - **依賴卡**：懸停在模組上，顯示它依賴誰、誰依賴它（完整依賴鏈），跟隨滑鼠。
+        - **基礎組件**（載入器組件和 MonoDetour 等公用程式庫）單獨列在底部，唯讀。
+        - **改名 / 改簡介**：雙擊模組名稱或簡介（手把在格子上按 A，選「編輯名稱 / 編輯簡介」）。立即儲存到目前選中的語言檔案，設定頁和快捷鍵設定頁也會顯示新名字。留空儲存即恢復原文。
+        - **列選單**（右鍵，手把按 A / Y）：編輯名稱、編輯簡介、移動到分組…、檢視模組依賴項、版本資訊。
+
+        ### 分組
+
+        - 分組只用於顯示，不會移動或改名任何資料夾。最多 **3 層**，每個分組可以有自己的顏色。模組列表、快捷鍵設定頁和設定頁側欄顯示同一套分組和同一份摺疊狀態。
+        - 「分組管理」（工具列，或設定頁重新整理鈕旁的方形按鈕）打開分組編輯視窗：名稱、上層分組、描述、顏色（可加入自訂顏色）、成員、刪除。刪除分組後，其中的模組和子分組上移一層。
+        - **鉛筆 = 編輯模式，只管拖動**：開著時拖動模組排序、拖到分組標題上換組、Ctrl / Shift 多選後一起拖、把分組標題拖到另一個分組標題上（上緣 / 下緣 = 排到它前面 / 後面、同一層，中間 = 成為它的子分組）；關著時拖動就是捲動列表。子分組排在本組模組的前面。
+        - 不開鉛筆也可以：**右鍵分組標題**（手把按 Y）有新增子分組 / 編輯分組 / 移到頂層 / 刪除分組；雙擊分組標題編輯該分組；模組列選單的「移動到分組…」隨時可用，會移動所有已選的模組。
+        - **智慧分組**：第一次打開模組列表且還沒有分組時，本模組會按 `plugins` 裡的資料夾結構建議一套分組。選「按此分組」採用，選「不用了」以後不再詢問。只寫 `overview.json`。
+
+        ### 日誌視窗
+
+        工具列的「日誌」打開即時日誌：**BepInEx** 日誌、**遊戲**日誌和**自訂**日誌來源（其他模組可以註冊自己的來源，本模組帶時間戳的執行日誌就是其中之一）。可按等級（可複選，等級名與日誌同色）、模組或分組篩選，搜尋，摺疊重複錯誤，展開長呼叫堆疊，收藏常看的來源，複製，暫停或跟隨最新一行。「查看」可切到最近 3 次啟動的歷史日誌（副本存在 `config\ModConfigEnhance\cache\log-history\`，單個檔案上限 10 MB），篩選、搜尋照常。**匯出**產生日誌 ZIP，可選附帶遊戲 / BepInEx / 模組版本與模組清單（不含任何設定值，個人路徑會被去掉）。「控制台」開關 BepInEx 控制台視窗（會改 `BepInEx.cfg` 的 `[Logging.Console] Enabled`）。
+
+        **手把操作（兩個頁籤相同）**：↑↓ 逐個選模組（按住十字鍵或左搖桿可連續移動）；**LB / RB** 在工具列的按鈕間跳（隱藏已停用、重新整理、鉛筆、分組管理、語言、主題、日誌……）；**RT + LB / RB** 在「模組列表 / 快捷鍵設定 / 模組設定」三個頁籤按鈕間移動，按 **A** 切換（「模組設定」開啟模組設定頁，焦點停在表頭「跳轉到快捷鍵設定頁」）；**RT + ←→** 翻頁；**RT + L3** 全部摺疊 / 展開。模組列表另有：**RT + ↑↓** 上 / 下一個分組，**RT + Y**（或在分組標題上按 **Y**）打開分組選單，**L3** 摺疊所在分組。在工具列按十字鍵 ↑ 到頁籤列；**B** 逐級返回，**快速連按兩次 B** 離開本頁；View 鍵顯示 / 隱藏底部按鍵提示。
+
+        ## 快捷鍵設定頁籤
+
+        - **所有已載入模組的快捷鍵一頁列完**，按模組分塊（按名稱排序，每塊可收起）。可搜尋名稱、模組、說明或按鍵，篩選「全部 / 重複 / 未綁定」。
+        - **鍵盤 / 手把兩欄**。點擊鍵盤格後按下按鍵或組合鍵（ESC 取消），**錄完立即寫進該模組的設定**，沒有另外的儲存步驟。右鍵（手把按 Y）打開更多操作：恢復模組預設、清空、忽略重複提示、編輯短說明。
+        - **模組預設**欄：顯示模組自帶的預設鍵，點擊立即恢復。用手把時，沒有手把預設鍵的快捷鍵在這一格按 A 是移除錄好的組合鍵，會先彈出小選單確認。
+        - **重複鍵**：同一個鍵被多個選項使用時會標出來，也包括與遊戲自己的操作相同的鍵（按下時兩邊都會觸發）。不在意的提示可以忽略；「更多 → 恢復全部衝突提醒」可全部找回。
+        - **短說明**：雙擊格子（手把按 A）為目前語言寫一句短說明，儲存在目前選中的語言檔案裡；留空則顯示設定項原本的說明。
+        - 齒輪按鈕打開該模組的設定頁。
+
+        **本頁手把操作**
+
+        - 與模組列表相同：↑↓ 移動，**LB / RB** 跳工具列，**RT + LB / RB** 移到頁籤按鈕（**A** 切換），**RT + ←→** 翻頁，**RT + L3** 全部展開 / 收起（模組與分組）。
+        - 不按 RT 時 **L3** 收起 / 展開焦點所在的模組或分組。在工具列按十字鍵 ↑ 到頁籤列。
+        - **B** 逐級返回（關選單、退出輸入、取消錄製）；**快速連按兩次 B** 離開本頁（從「跳轉到快捷鍵設定頁」進來的回到模組設定頁，否則回到遊戲設定）。View 鍵顯示 / 隱藏底部按鍵提示。
+        - 在**手把**欄按 A 錄製手把按鍵。錄製期間 B 不會離開頁面，**長按 B 1 秒**結束錄製。
+
+        **手把組合鍵（自由組合）**
+
+        - 大多數模組的快捷鍵只認鍵盤。可以在手把欄給這類快捷鍵錄一個手把鍵或組合鍵：**先按住任意幾個鍵，再按最後一個鍵**（連同最後一個最多 4 個鍵）。按下時，本模組替該模組按下這個快捷鍵目前的鍵盤鍵。模組本身就有手把按鍵設定的，手把欄直接改那個設定。
+        - 組合鍵**只在遊戲中生效**（角色已載入、沒開暫停選單），在輸入框裡打字時也不生效。
+        - **先按住的那些鍵遊戲仍會讀到，只有最後一個鍵在這一下被屏蔽**。介意的話，可以改用 Steam 輸入自帶的動作集或組合鍵（和弦）實現同樣的效果。
+        - 如果某個鍵單獨綁了快捷鍵、又是別的組合鍵裡先按住的鍵（例如單獨的 LT 和 LT + A），按下它時單鍵的那個也會觸發。
+
+        - 有分組時，快捷鍵設定頁顯示同樣的分組標題（點擊或在標題上按 L3 摺疊；Y / 右鍵打開分組選單）。
+
+        **個人檔案**（本機，`BepInEx\config\ModConfigEnhance\` 下）：`overview.json`（分組、摺疊的分組、隱藏已停用）、`hotkeys.json`（忽略的重複提示、收起的模組）、`gamepad-combos.json`（手把組合鍵）、`smart-grouping-offered`（智慧分組選過「不用了」）以及 `cache\` 資料夾（日誌視窗的收藏和最近 3 次啟動的日誌副本，可隨時刪除）。匯出的日誌放在你選的位置，儲存對話框打不開時放進 `export\`。鍵盤按鍵本身寫在各模組自己的設定檔裡。
 
         ## 演示
 
@@ -402,24 +641,24 @@ internal static class LanguageReadme
         ## 依賴
 
         - **必須**：BepInEx 5、PEAKLib.Core、PEAKLib.UI、ModConfig 1.8.2
-        - **掛在依賴裡，實際可選**：XUnity AutoTranslator——列進依賴只是讓模組管理器一起裝上；不裝也不會出問題，只是翻譯工具（補漏翻 / 顯示原文 / 詞典鏡像）置灰，其餘功能照常。注意下方提醒：本模組會改它的一項設定。
-        - **可選**：TimeTheme（晝夜配色）
+        - **不再需要**：XUnity AutoTranslator——翻譯已由本模組自己完成，不再讀取或改動 XUnity 的任何東西。仍裝著它的話見下方說明。
+        - **可選**：TimeTheme（只讀取它的晝夜狀態，供「夜裡自動紫色」主題使用）
+        - **不要與 In-Game Mod Manager（遊戲內模組管理器）同時安裝**：它已經包含本模組的全部功能。兩者同時安裝時，**本模組整個不載入**，只在 BepInEx 日誌裡留一條警告；請刪掉其中一個。
 
-        ## ⚠️ 本模組會改動 XUnity AutoTranslator 的一項設定
+        ## 不再使用 XUnity AutoTranslator
 
-        XUnity AutoTranslator 保持出廠預設的 GoogleTranslateV2 端點時，會把**所有**介面文字（包括模組設定）丟去線上機翻，結果常常不知所云。因此裝有 XUnity 時，本模組的選項 `Disable XUnity machine translation`（**預設開啟**；`BepInEx\config\com.aiae.modconfigenhance.cfg` 的 `2. Localization` 分區）每次啟動會：
+        翻譯現在全部由本模組自己的語言檔案完成，包括模組名稱、分區、選項名、說明和下拉選項。XUnity AutoTranslator 不再是依賴，本模組也不再切換它的語言、往它的目錄寫詞典或清空它的機翻端點。
 
-        - 清空 `AutoTranslatorConfig.ini` 的 `Endpoint` / `FallbackEndpoint`，讓 XUnity 只做詞典翻譯（本模組的語言檔案、你自己的詞典），不再機翻；
-        - 清空各語言目錄下的機翻快取 `_AutoGeneratedTranslations*.txt`，每個檔案旁留一份 `.bak`（只留第一次的）。
-
-        **依賴線上機翻的話，請在首次啟動前把這個選項改成 `false`**；事後想恢復也可以：關掉選項、把端點填回 `AutoTranslatorConfig.ini`、用 `.bak` 還原快取。
+        - 舊版本寫進 XUnity 目錄的詞典（`ModConfigEnhance_<碼>.txt`）會一次性移到 `language\_xunity-mirror-backup_<日期>\`。
+        - 舊版本預設清空過 `AutoTranslatorConfig.ini` 的 `Endpoint` / `FallbackEndpoint`，**不會自動恢復**：想用回線上機翻，請自行把端點填回去，並用 `_AutoGeneratedTranslations*.txt` 旁的 `.bak` 還原快取。
+        - 繼續裝著 XUnity 並開著機翻時，它仍可能自行翻譯本頁面上的文字。
 
 
         ## 語言檔案
 
         目錄：`BepInEx\config\ModConfigEnhance\language\`
 
-        檔案格式同 XUnity 詞典：`鍵=譯文`，`//` 註解，`\n` 換行、`\=` 等號、`{0}` `{1}` 佔位符原樣保留——**等號左邊一個字元都別動**（它是詞典逐字比對螢幕文字的鍵，改動就永遠對不上）。第一段 `MCE_…=…` 是本模組介面詞條（鍵為穩定 ID，只翻右邊），之後的 `原文=譯文` 由各模組交給 XUnity 使用。
+        檔案格式同 XUnity 詞典：`鍵=譯文`，`//` 註解，`\n` 換行、`\=` 等號、`{0}` `{1}` 佔位符原樣保留——**等號左邊一個字元都別動**（它是詞典逐字比對螢幕文字的鍵，改動就永遠對不上）。第一段 `MCE_…=…` 是本模組介面詞條（鍵為穩定 ID，只翻右邊），之後的 `原文=譯文` 是各模組自己的文字，由本模組直接顯示。`r:"正則"=譯文` 是正則規則（寫法同 XUnity 詞典，`$1` 引用捕獲組）。
 
         `_` 開頭的檔案不進下拉框；只讀當前層的 `.txt`，子目錄被忽略——備份請放進子目錄。
 
@@ -433,7 +672,7 @@ internal static class LanguageReadme
         | `語言碼-變體.txt` | **同語言碼的獨立分組**：與基礎組平起平坐，各自一套完整翻譯，風格可以完全不同 | `zh-tw-old.txt`、`zh-cn-整活版.txt` |
         | `組名_分包.txt` | **組內分包**：併入前綴所指的組，按檔名排序追加載入、後者覆蓋前者 | `zh-tw_補翻.txt`、`zh-cn-old_修正.txt` |
 
-        - **語言碼** = 檔名開頭的 `xx` 或 `xx-yy`（`zh-cn-old` 的碼是 `zh-cn`）。它只管兩件事：XUnity 鏡像目錄（`Translation\<碼>`）和「跟隨遊戲語言」匹配。別名：`zh`=`zh-cn`、`en`=`en-us`。
+        - **語言碼** = 檔名開頭的 `xx` 或 `xx-yy`（`zh-cn-old` 的碼是 `zh-cn`）。它只管「跟隨遊戲語言」匹配。別名：`zh`=`zh-cn`、`en`=`en-us`。
         - **下拉框顯示**：檔案首行寫了 `// display: 名字` 就顯示「名字 (檔名)」，沒寫就顯示檔名本身；組內多於一個檔案時末尾帶 `×數量`。例：`zh-tw-old.txt`（寫了 `// display: 舊版翻譯`）→ `舊版翻譯 (zh-tw-old)`；`zh-tw.txt`（沒寫）→ `zh-tw`；`zh-tw-basic.txt`（`// display: 繁體中文`）+ `zh-tw-basic_ModB.txt` 一組兩個 → `繁體中文 (zh-tw-basic) ×2`。
         - **說明框載入列表**：選中一組後按載入順序列出每個檔案和它自己的顯示名，如 `zh-tw-basic.txt（繁體中文）`、`zh-tw-basic_ModB.txt（Modb）`。
         - **註釋強調**：`MCE_TIP_*` 懸停註釋裡，`` `…` `` 或 `“…”` 包住的文字用標題色強調（反引號本身不顯示，彎引號保留）。
@@ -467,27 +706,28 @@ internal static class LanguageReadme
         ### 選中語言後（無需重啟）
 
         - 本模組介面立刻切換；說明面板按實際載入順序列出全部檔名（帶各自顯示名）。
-        - XUnity 同步切到該組的語言碼：詞典目錄變為 `Translation\<碼>\Text\`，詞條鏡像為其中的 `ModConfigEnhance_<碼>.txt`，`AutoTranslatorConfig.ini` 的 `Language=` 同步改寫。本模組開關 `Switch XUnity language with the language file` 可關閉此連動。
+        - 本模組負責顯示的模組文字（側欄、說明面板、設定頁）立即換成該組的譯文；沒有譯文的顯示原文。
 
         ## 工具列
 
         | 按鈕 | 作用 |
         |---|---|
         | 導出翻譯 | 全部介面文字匯出到 `export\`（本模組 `MCE_` 塊 + 各模組分塊，含 manifest 簡介） |
-        | 補漏翻 | 只列 XUnity 詞典未命中的條目（需 XUnityAutoTranslate） |
+        | 補漏翻 | 只列目前語言組還沒覆蓋的條目（整句譯文和 `r:` 正則規則都算已翻） |
         | 僅導出已選 | 側欄出現「導出」複選框列，只匯出勾選模組（本模組恆包含） |
-        | 顯示原文/譯文 | 全域原文/譯文切換（=XUnityAutoTranslate Alt+T） |
-        | 重載翻譯 | 重讀語言檔案並重新整理 XUnityAutoTranslate 詞典 |
+        | 顯示原文/譯文 | 把本模組顯示的模組文字在原文和譯文之間切換 |
+        | 重載翻譯 | 從磁碟重新讀取語言檔案 |
         | 打開目錄 | 打開 `config\ModConfigEnhance\` |
         | 語言 ▾ / 重新整理 | 按語言分組選擇；新增語言點重新整理，同語言新增分包點重載翻譯 |
 
         ## 手把操作
 
-        - **導航**：搖桿/十字鍵移動焦點；A 確認/進入；B 逐級返回（調值→編輯→捕獲→右欄→左欄→退頁）
+        - **導航**：搖桿/十字鍵移動焦點；A 確認/進入；B 逐級返回（調值→編輯→捕獲→右欄→左欄→退頁；退頁需快速連按兩次 B）
         - **LB/RB**：切換模組
+        - **右搖桿**：捲動右側選項列表，按住越久越快
         - **滑條**：A 啟用調值態，左右調值，再按 A 或 B 退出；步進為區間 0.5%，按住 1s 後 10 步/秒、3s 後 40 步/秒
         - **下拉框**：A 展開，上下選項，A 選定，B 關閉
-        - **輸入框**：A 進入編輯，B 退出。無螢幕鍵盤——打字靠實體鍵盤或平台 OSK（Deck 用 Steam+X）
+        - **輸入框**：A 進入編輯，B 只退出編輯。Steam 大螢幕模式或 Steam Deck 上按 A 彈出 Steam 螢幕鍵盤，其他情況用實體鍵盤輸入
         - **按鍵綁定**：A 進入捕獲，按住目標鍵 1 秒寫入；B 取消
 
         ## 設定項
@@ -496,8 +736,8 @@ internal static class LanguageReadme
 
         | 分區 | 內容 |
         |---|---|
-        | 1. Layout | 樹形側欄、說明面板開關（重啟生效） |
-        | 2. Localization | 介面本地化、隱藏本地化相關按鈕（即時生效）、XUnityAutoTranslate 跟隨切換、禁用 XUnityAutoTranslate 機翻（**預設開**，見上方提醒） |
+        | 1. Layout | 樹形側欄、說明面板開關（重啟生效），配色主題：藍色 / 紫色 / 夜裡自動紫色（即時生效） |
+        | 2. Localization | 介面本地化、隱藏本地化相關按鈕（即時生效） |
         | 3. State | 語言檔案、置頂、匯出排除等執行狀態（Hidden） |
 
         ## 其他細節

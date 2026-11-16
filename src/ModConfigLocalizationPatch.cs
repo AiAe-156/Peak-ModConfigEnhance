@@ -21,7 +21,7 @@ namespace ModConfigEnhance;
 /// 能挂 LocalizedText 组件的文字就挂组件（切语言时游戏会统一刷新），挂不了的在语言切换回调里重设。
 /// 跟随游戏语言时简体 / 繁体 / 英文内建，其他语言回落英文；选了语言文件则全语言用该文件。
 ///
-/// 模组名、分区名、选项名不在此处处理 —— 那是各模组 cfg 里的原文，继续由 XUnity 的 mods.txt 负责。
+/// 模组名、分区名、选项名、下拉选项（各模组 cfg 里的原文）由 <see cref="MceConfigLabels"/> 按语言文件显示，不再交给 XUnity。
 /// </summary>
 internal static class ModConfigLocalizationPatch
 {
@@ -111,6 +111,8 @@ internal static class ModConfigLocalizationPatch
         harmony.Patch(setText, postfix: new HarmonyMethod(typeof(ModConfigLocalizationPatch), nameof(SetTextPostfix)));
         harmony.Patch(capturePrompt, postfix: new HarmonyMethod(typeof(ModConfigLocalizationPatch), nameof(CapturePromptPostfix)));
         harmony.Patch(duplicates, postfix: new HarmonyMethod(typeof(ModConfigLocalizationPatch), nameof(DuplicatesPostfix)));
+        harmony.Patch(AccessTools.Method(typeof(ModSettingsMenu), "ShowSettings"), postfix: new HarmonyMethod(typeof(ModConfigLocalizationPatch), nameof(MceSettingsPostfix)));
+        harmony.Patch(AccessTools.Method(typeof(ModSettingsMenu), "UpdateSectionTabs"), postfix: new HarmonyMethod(typeof(ModConfigLocalizationPatch), nameof(MceSettingsPostfix)));
 
         Attached = true;
         State = $"已挂载（ModConfig {ModConfigSupport.InstalledVersion}）";
@@ -171,6 +173,7 @@ internal static class ModConfigLocalizationPatch
             if (menu != null)
             {
                 ApplyFilterLabels(menu);
+                MceConfigLabels.Refresh(menu);
             }
         }
         catch (Exception ex)
@@ -185,10 +188,10 @@ internal static class ModConfigLocalizationPatch
         {
             if (!Loc.IsRefreshing)
             {
-                Loc.ReRegister(); // 语言表若被整表重载（ReloadAll），把词条补回去；跟随游戏时顺带按新语言重做 XUnity 镜像
+                Loc.ReRegister(); // 语言表若被整表重载（ReloadAll），把词条补回去
                 if (string.IsNullOrEmpty(Plugin.LanguageFile.Value))
                 {
-                    Loc.SyncXUnity(Loc.FollowGame);
+                    Loc.InvalidateEditingTranslations(); // 跟随游戏语言：游戏换了语言，模组文字也跟着换组重画
                 }
             }
 
@@ -198,6 +201,7 @@ internal static class ModConfigLocalizationPatch
             if (menu != null)
             {
                 ApplyFilterLabels(menu);
+                MceConfigLabels.Refresh(menu);
             }
         }
         catch (Exception ex)
@@ -326,6 +330,12 @@ internal static class ModConfigLocalizationPatch
         }
     }
 
+    private static void MceSettingsPostfix(ModSettingsMenu __instance)
+    {
+        try { MceConfigLabels.Refresh(__instance); }
+        catch (Exception ex) { Plugin.Log.LogWarning("[界面汉化] 刷新选项名译文失败: " + ex.Message); }
+    }
+
     private static void DuplicatesPostfix(object __instance)
     {
         if (__instance is not InputBindingSettingUI ui)
@@ -334,6 +344,9 @@ internal static class ModConfigLocalizationPatch
         }
 
         TextMeshProUGUI? warning = ui.DuplicateWarningText;
+        // Tell the cell's corner badge (it does not poll the expensive duplicate scan each frame).
+        var extras = ui.GetComponentInParent<SettingCellExtras.CellExtras>();
+        if (extras != null) extras.OnDuplicatesRecomputed(warning != null && warning.gameObject.activeSelf, warning != null ? warning.text : "");
         if (warning == null || !warning.gameObject.activeSelf)
         {
             return;

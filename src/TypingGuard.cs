@@ -102,14 +102,20 @@ internal static class TypingGuard
         return false;
     }
 
+    /// <summary>现在是否有 TMP 输入框拿着焦点（任何页面、任何模组的）。Driver 与手柄组合键共用。</summary>
+    internal static bool FieldFocusedNow()
+    {
+        GameObject? selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        TMP_InputField? field = selected != null ? selected.GetComponent<TMP_InputField>() : null;
+        return field != null && field.isFocused;
+    }
+
     /// <summary>挂在模组设置页上：页面开着时每帧看焦点是不是 TMP 输入框。</summary>
     internal sealed class Driver : MonoBehaviour
     {
         private void Update()
         {
-            GameObject? selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
-            TMP_InputField? field = selected != null ? selected.GetComponent<TMP_InputField>() : null;
-            Active = field != null && field.isFocused;
+            Active = FieldFocusedNow();
         }
 
         private void OnDisable()

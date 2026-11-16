@@ -15,27 +15,29 @@ namespace ModConfigEnhance;
 /// 词条：每条一个稳定键（<c>MCE_*</c>，写进游戏语言表 <c>LocalizedText.mainTable</c>，与 PEAKLib 的 MenuAPI 同一条路），
 /// 界面文字都挂 <c>LocalizedText</c> 组件或在需要时用 <see cref="Get"/> 取，切语言时游戏的 <c>RefreshAllText</c> 统一刷新。
 ///
-/// 语言文件：<c>BepInEx\config\ModConfigEnhance\language\*.txt</c>，格式与 XUnity 词典相同（<c>键=译文</c>，// 注释，\n \= 转义）。
-/// 两类行：<c>MCE_*</c> 键行是本模组界面词条；其余行是本模组 cfg 选项的英文原文 → 译文，会镜像给 XUnity（它负责翻设置列表里的文字）。
+/// 语言文件：<c>BepInEx\config\ModConfigEnhance\language\*.txt</c>，格式与 XUnity 词典相同（<c>键=译文</c>，// 注释，\n \= 转义，<c>r:"正则"=译文</c>）。
+/// 两类行：<c>MCE_*</c> 键行是本模组界面词条；<c>r:</c> 行是正则规则；其余行是各模组文字的原文 → 译文，由本模组自己显示（侧栏、说明面板、设置页），不再交给 XUnity。
 /// 文件名不以 <c>_</c> 开头的 .txt 才算语言文件；首行可写 <c>// display: 显示名</c>。说明在根目录 <c>readme.md</c>。
-/// 语言文件就是「导出翻译」的产物：MCE_ 块 + 各模组选项文本，翻完改名放进来即可，非 MCE_ 行镜像给 XUnity。
+/// 语言文件就是「导出翻译」的产物：MCE_ 块 + 各模组选项文本，翻完改名放进来即可。
 ///
 /// 两种模式：
 ///   · 跟随游戏语言（默认）：en-us / zh-cn / zh-tw 三份内建文件各填进对应语言槽，其余语言回落英文；
 ///   · 指定文件：该文件的译文填满全部语言槽，游戏切语言不再影响本模组管的文字。
 /// </summary>
-internal static class Loc
+internal static partial class Loc
 {
     internal const string KeyPrefix = "MCE_";
     internal const string FollowGame = "";
     internal const string ReadmeFile = "readme.md";
-    internal const string MirrorPrefix = "ModConfigEnhance_";
 
     private const string DisplayMarker = "// display:";
 
     internal static string RootDirectory => Path.Combine(Paths.ConfigPath, "ModConfigEnhance");
     internal static string LanguageDirectory => Path.Combine(RootDirectory, "language");
     internal static string ExportDirectory => Path.Combine(RootDirectory, "export");
+    /// <summary>1.1.0：模组概览的缓存（日志窗口的收藏等，可随时删），<c>config\ModConfigEnhance\cache\</c>（用户 2026-11-15 定 Q7）。
+    /// IGMM 同名成员指向 BepInEx\IGMM\；MCE 按目录约定「子目录按用途分」放在自己的配置目录下。</summary>
+    internal static string RuntimeDirectory => Path.Combine(RootDirectory, "cache");
 
     // ── 内建词条 ──────────────────────────────────────────────────
 
@@ -79,7 +81,7 @@ internal static class Loc
         new("PIN", "Pin", "置顶", "置頂"),
         new("EXPORT_COL", "Export", "导出", "導出"),
         new("EXPORT_SELECTED", "Selected only", "仅导出已选", "僅導出已選"),
-        new("KEYS_ONLY", "Keybind options only", "只显示快捷键选项", "只顯示快捷鍵選項"),
+        new("JUMP_HOTKEYS", "Go to keybindings", "跳转到快捷键设置页", "跳轉到快捷鍵設定頁"),
         // 工具行按钮
         new("BTN_EXPORT", "Export texts", "导出翻译", "導出翻譯"),
         new("BTN_UNTRANSLATED", "Untranslated", "补漏翻", "補漏翻"),
@@ -88,6 +90,7 @@ internal static class Loc
         new("BTN_RELOAD", "Reload texts", "重载翻译", "重載翻譯"),
         new("BTN_OPEN_FOLDER", "Open folder", "打开目录", "打開目錄"),
         new("BTN_REFRESH", "Refresh", "刷新", "重新整理"),
+        new("BTN_THEME", "Theme", "主题", "主題"),
         new("SORT_DEFAULT", "Load order", "加载顺序", "載入順序"),
         new("SORT_LOAD_DESC", "Load order, reversed", "加载倒序", "載入倒序"),
         new("SORT_NAME", "Name A→Z", "名称 A→Z", "名稱 A→Z"),
@@ -101,48 +104,41 @@ internal static class Loc
         new("META_OFF", "OFF", "关", "關"),
         new("META_EMPTY", "(empty)", "（空）", "（空）"),
         // 提示（说明面板里显示；{0} {1} {2} 是占位符，译文里保留）
-        new("NOTICE_NO_XUNITY_CHECK", "XUnity AutoTranslator is not installed, so the untranslated check is unavailable.", "没装 XUnity AutoTranslator，查漏翻不可用。", "沒裝 XUnity AutoTranslator，查漏翻不可用。"),
-        new("NOTICE_NO_XUNITY", "XUnity AutoTranslator is not installed or its structure has changed.", "没装 XUnity AutoTranslator，或它的结构已变。", "沒裝 XUnity AutoTranslator，或它的結構已變。"),
         new("NOTICE_SHOWING_TRANSLATED", "Showing translations.", "已切回译文。", "已切回譯文。"),
-        new("NOTICE_SHOWING_ORIGINAL", "Showing original texts (click again to restore; same as Alt+T).", "正在显示原文（再点一次切回译文；XUnity 快捷键 Alt+T 同效）。", "正在顯示原文（再點一次切回譯文；XUnity 快捷鍵 Alt+T 同效）。"),
-        new("NOTICE_RELOADED", "Re-read the language file and the dictionaries from disk.", "已从磁盘重新读取语言文件与词典。", "已從磁碟重新讀取語言檔案與詞典。"),
+        new("NOTICE_SHOWING_ORIGINAL_V2", "Showing original texts of mods (click again to restore).", "正在显示模组原文（再点一次切回译文）。", "正在顯示模組原文（再點一次切回譯文）。"),
+        new("NOTICE_RELOADED_V2", "Re-read the language files from disk.", "已从磁盘重新读取语言文件。", "已從磁碟重新讀取語言檔案。"),
         new("NOTICE_EXPORT_FAILED", "Export failed, see the log.", "导出失败，详见日志。", "導出失敗，詳見日誌。"),
         new("NOTICE_UNTRANSLATED", "{0} untranslated ({1} translated, {2} already CJK)", "未翻译 {0} 条（已翻 {1} 条，已是中文 {2} 条）", "未翻譯 {0} 條（已翻 {1} 條，已是中文 {2} 條）"),
         new("NOTICE_EXPORTED", "Exported {0} entries", "已导出 {0} 条", "已導出 {0} 條"),
         new("NOTICE_SELECTED_MODS", ", {0} selected mods", "，{0} 个已选模组", "，{0} 個已選模組"),
         new("NOTICE_OPEN_FOLDER_FAILED", "Could not open the folder: {0}", "打开目录失败：{0}", "打開目錄失敗：{0}"),
-        new("NOTICE_LANG_APPLIED", "Language file applied: {0} ({1} entries).", "已应用语言文件：{0}（{1} 条）。", "已套用語言檔案：{0}（{1} 條）。"),
         new("NOTICE_LANG_FOLLOW", "Following the game language (built-in en-us / zh-cn / zh-tw).", "已改为跟随游戏语言（内建 en-us / zh-cn / zh-tw）。", "已改為跟隨遊戲語言（內建 en-us / zh-cn / zh-tw）。"),
-        new("NOTICE_LANG_MISSING", "{0}: {1} entries missing, they fall back to English. See {2}.", "{0}：缺 {1} 条，缺的回落英文。参考 {2}。", "{0}：缺 {1} 條，缺的回落英文。參考 {2}。"),
         new("NOTICE_LANG_ERROR", "Language file error in {0}: {1}", "语言文件 {0} 有错：{1}", "語言檔案 {0} 有錯：{1}"),
         new("NOTICE_LANG_NO_ENTRIES", "no valid \"key=text\" line", "没有一行有效的「键=译文」", "沒有一行有效的「鍵=譯文」"),
         new("NOTICE_LANG_BAD_LINES", "lines without \"=\": {0}", "缺少等号的行：{0}", "缺少等號的行：{0}"),
         new("NOTICE_LANG_NOT_FOUND", "file not found (click Refresh)", "文件不存在（点刷新）", "檔案不存在（點重新整理）"),
-        new("NOTICE_XUNITY_SWITCHED", "XUnity switched to \"{0}\" ({1} entries handed over); texts without a translation show the original.", "XUnity 已切到「{0}」（交给它 {1} 条）；词典里没有的文本显示原文。", "XUnity 已切到「{0}」（交給它 {1} 條）；詞典裡沒有的文字顯示原文。"),
-        new("NOTICE_XUNITY_SYNCED", "XUnity dictionary \"{0}\" refreshed ({1} entries handed over).", "XUnity 词典「{0}」已刷新（交给它 {1} 条）。", "XUnity 詞典「{0}」已重新整理（交給它 {1} 條）。"),
-        new("NOTICE_XUNITY_NO_SWITCH", "XUnity could not be switched at runtime (structure changed); it stays on \"{0}\". Only this mod's UI changed.", "无法在运行时切换 XUnity（结构不符），它仍是「{0}」；只改了本模组界面。", "無法在執行時切換 XUnity（結構不符），它仍是「{0}」；只改了本模組介面。"),
         new("NOTICE_REFRESHED", "Language folder rescanned: {0} language group(s).", "已重新扫描语言目录：{0} 个语言组。", "已重新掃描語言目錄：{0} 個語言組。"),
         // 悬停注释（说明面板显示；首行是标题，`…` 包住的部分用标题色强调）
         new("TIP_EXPORT",
             "Export texts\nExports the untranslated source dictionary of every mod, including MCE (`ModConfigEnhance`) itself;\nmods unticked while `Selected only` is on are excluded.\n\nDefault output: `*\\PEAK\\BepInEx\\config\\ModConfigEnhance\\export\\*`\nUsage: `*\\PEAK\\BepInEx\\config\\ModConfigEnhance\\readme.md`",
             "导出翻译\n导出包括 MCE（`ModConfigEnhance`）模组本身在内的所有模组的待翻译原文词典;\n但不包括`仅导出已选`启用后取消选中的模组。\n\n默认导出路径：`*\\PEAK\\BepInEx\\config\\ModConfigEnhance\\export\\*`\n如何使用请查阅`*\\PEAK\\BepInEx\\config\\ModConfigEnhance\\readme.md`",
             "導出翻譯\n導出包括 MCE（`ModConfigEnhance`）模組本身在內的所有模組的待翻譯原文詞典;\n但不包括`僅導出已選`啟用後取消選中的模組。\n\n默認導出路徑：`*\\PEAK\\BepInEx\\config\\ModConfigEnhance\\export\\*`\n如何使用請查閱`*\\PEAK\\BepInEx\\config\\ModConfigEnhance\\readme.md`"),
-        new("TIP_UNTRANSLATED",
-            "Untranslated\nExports only the entries the current language group doesn't cover: `MCE_` UI terms check the active group,\nother texts query the live `XUnity` dictionary (exact / regex / substitutions all count).\n\nRequires `XUnityAutoTranslate`; output lands in `export\\` as well.",
-            "补漏翻\n只导出当前语言组还没覆盖的原文条目：`MCE_` 界面词条查当前语言组，\n其余文本查 `XUnity` 当前词典（精确/正则/替换都算已翻）。\n\n需安装 `XUnityAutoTranslate`；产物同样落在 `export\\` 目录。",
-            "補漏翻\n只導出當前語言組還沒覆蓋的原文條目：`MCE_` 介面詞條查當前語言組，\n其餘文字查 `XUnity` 目前詞典（精確/正則/替換都算已翻）。\n\n需安裝 `XUnityAutoTranslate`；產物同樣落在 `export\\` 目錄。"),
+        new("TIP_UNTRANSLATED_V2",
+            "Untranslated\nExports only the entries the current language group doesn't cover yet: exact lines and `r:` regex rules both count as translated.\n\nOutput lands in `export\\`; fill it in and put it into `language\\` as described in `readme.md`.",
+            "补漏翻\n只导出当前语言组还没覆盖的原文条目：整句译文和 `r:` 正则规则命中的都算已翻。\n\n产物落在 `export\\` 目录，填好后按 `readme.md` 的说明放进 `language\\`。",
+            "補漏翻\n只導出目前語言組還沒覆蓋的原文條目：整句譯文和 `r:` 正則規則命中的都算已翻。\n\n產物落在 `export\\` 目錄，填好後按 `readme.md` 的說明放進 `language\\`。"),
         new("TIP_SELECTED_ONLY",
             "Selected only\nWhen ticked, every mod row in the sidebar gets an `Export` checkbox — `Export texts`/`Untranslated` cover ticked mods only.\n\nThis mod is always included (the exported file doubles as its language file).",
             "仅导出已选\n勾选后侧栏每个模组行出现`导出`复选框，`导出翻译`/`补漏翻`只包含勾选的模组。\n\n本模组始终包含（导出文件同时是本模组的语言文件）。",
             "僅導出已選\n勾選後側欄每個模組行出現`導出`複選框，`導出翻譯`/`補漏翻`只包含勾選的模組。\n\n本模組始終包含（導出檔案同時是本模組的語言檔案）。"),
-        new("TIP_TOGGLE_ORIG",
-            "Show original / Show translated\nGlobal original ↔ translation toggle (same as `XUnity`'s `Alt+T`): check the source before exporting, or preview how translations look on screen.\n\nRequires `XUnityAutoTranslate`.",
-            "显示原文 / 显示译文\n全局原文↔译文切换（等同 `XUnity` 的 `Alt+T`）：导出前对照原文、或检查译文上屏效果。\n\n需安装 `XUnityAutoTranslate`。",
-            "顯示原文 / 顯示譯文\n全域原文↔譯文切換（等同 `XUnity` 的 `Alt+T`）：導出前對照原文、或檢查譯文上屏效果。\n\n需安裝 `XUnityAutoTranslate`。"),
-        new("TIP_RELOAD",
-            "Reload texts\nRe-reads the files in `language\\` and refreshes the `XUnity` dictionary — after editing a language file this applies it without re-picking the language.\n\nSame as `XUnity`'s `Alt+R`.",
-            "重载翻译\n重新读取 `language\\` 的语言文件并刷新 `XUnity` 词典——改完语言文件点它即生效，无需重选语言。\n\n等同 `XUnity` 的 `Alt+R`。",
-            "重載翻譯\n重新讀取 `language\\` 的語言檔案並重新整理 `XUnity` 詞典——改完語言檔案點它即生效，無需重選語言。\n\n等同 `XUnity` 的 `Alt+R`。"),
+        new("TIP_TOGGLE_ORIG_V2",
+            "Show original / Show translated\nSwitches every mod text this mod displays (sidebar, description panel, settings page) between translation and original — check the source before exporting, or compare.\n\nThis mod's own UI text keeps the selected language.",
+            "显示原文 / 显示译文\n把本模组负责显示的模组文字（侧栏、说明面板、设置页）在译文和原文之间切换：导出前对照原文，或检查译文效果。\n\n本模组自己的界面文字保持所选语言。",
+            "顯示原文 / 顯示譯文\n把本模組負責顯示的模組文字（側欄、說明面板、設定頁）在譯文和原文之間切換：匯出前對照原文，或檢查譯文效果。\n\n本模組自己的介面文字保持所選語言。"),
+        new("TIP_RELOAD_V2",
+            "Reload texts\nRe-reads the files in `language\\` — after editing a language file this applies it without re-picking the language.",
+            "重载翻译\n重新读取 `language\\` 的语言文件：改完语言文件点它即生效，无需重选语言。",
+            "重載翻譯\n重新讀取 `language\\` 的語言檔案：改完語言檔案點它即生效，無需重選語言。"),
         new("TIP_OPEN_DIR",
             "Open folder\nOpens `BepInEx\\config\\ModConfigEnhance\\`\n\n`language\\` (language files), `export\\` (exports) and `readme.md` (docs) all live there.",
             "打开目录\n打开 `BepInEx\\config\\ModConfigEnhance\\`\n\n`language\\`（语言文件）、`export\\`（导出产物）、`readme.md`（使用说明）都在里面。",
@@ -159,26 +155,47 @@ internal static class Loc
             "Refresh\nRescans the `language\\` directory\n\n— new language files appear in the dropdown after clicking this.",
             "刷新\n重新扫描 `language\\` 目录\n\n新增语言文件后点它才会出现在下拉里。",
             "重新整理\n重新掃描 `language\\` 目錄\n\n新增語言檔案後點它才會出現在下拉里。"),
+        new("TIP_THEME",
+            "Theme\nSwitches the colour theme of this page between blue and purple.",
+            "主题\n在蓝色与紫色主题之间切换本页面的配色。",
+            "主題\n在藍色與紫色主題之間切換本頁面的配色。"),
+        new("TIP_JUMP_HOTKEYS",
+            "Go to keybindings\nOpens the `Keybindings` tab of `Mod overview`, which lists every mod's keybinds in one place.",
+            "跳转到快捷键设置页\n打开`模组概览`的`快捷键设置`页签，集中查看与修改所有模组的快捷键。",
+            "跳轉到快捷鍵設定頁\n開啟`模組概覽`的`快捷鍵設定`頁籤，集中檢視與修改所有模組的快捷鍵。"),
+        // 设置页侧栏分组（与模组概览共用 overview.json）
+        new("BTN_GROUPS", "Groups", "分组", "分組"),
+        new("GROUP_UNGROUPED", "Ungrouped", "未分组", "未分組"),
+        new("NOTICE_GROUPS_UNAVAILABLE", "Could not open the group editor, see the log.", "无法打开分组编辑，详见日志。", "無法開啟分組編輯，詳見日誌。"),
+        new("TIP_GROUPS",
+            "Groups\nCreate or edit groups: name, description, color and members. Same data as the `Mod overview` groups.\n\nPinned mods stay in the pinned area at the top; their group shows as a colored bar next to the pin bar.",
+            "分组管理\n新建或编辑分组：名称、描述、颜色和成员，与`模组概览`的分组是同一份数据。\n\n置顶的模组留在最上方的置顶区，所属分组显示为置顶竖线右侧的分组色条。",
+            "分組管理\n新建或編輯分組：名稱、描述、顏色和成員，與`模組概覽`的分組是同一份資料。\n\n置頂的模組留在最上方的置頂區，所屬分組顯示為置頂豎線右側的分組色條。"),
+        new("TIP_GROUP_HEADER",
+            "Click to collapse or expand. The collapsed state is shared with the `Mod overview`; searching temporarily expands every group.",
+            "点击折叠或展开，折叠状态与`模组概览`同步；搜索时所有分组临时展开。",
+            "點擊折疊或展開，折疊狀態與`模組概覽`同步；搜尋時所有分組臨時展開。"),
     };
 
-    /// <summary>本模组 cfg 选项名 / 说明的译文：键是 cfg 里的英文原文，镜像给 XUnity 后由它翻设置列表。</summary>
+    /// <summary>本模组 cfg 选项名 / 说明的内置译文：键是 cfg 里的英文原文，设置页与说明面板按它显示。</summary>
     internal static readonly Term[] ConfigTerms =
     {
         new("Tree sidebar", "Tree sidebar", "树形侧栏", "樹形側欄"),
         new("Description panel", "Description panel", "选项说明面板", "選項說明面板"),
-        new("Classic brown colours", "Classic brown colours", "经典棕色配色", "經典棕色配色"),
+        new("Colour theme", "Colour theme", "配色主题", "配色主題"),
+        new("Blue", "Blue", "蓝色", "藍色"),
+        new("Purple", "Purple", "紫色", "紫色"),
+        new("PurpleAtNight", "PurpleAtNight", "夜里自动紫色", "夜裡自動紫色"),
         new("UI localization", "UI localization", "界面本地化", "介面本地化"),
         new("Hide localization buttons", "Hide localization buttons", "隐藏本地化相关按钮", "隱藏本地化相關按鈕"),
-        new("Switch XUnity language with the language file", "Switch XUnity language with the language file", "语言文件同时切换 XUnity 的语言", "語言檔案同時切換 XUnity 的語言"),
-        new("Disable XUnity machine translation", "Disable XUnity machine translation", "禁用 XUnity 机翻端点", "禁用 XUnity 機翻端點"),
         new("1. Layout", "1. Layout", "1. 版面", "1. 版面"),
         new("2. Localization", "2. Localization", "2. 本地化", "2. 本地化"),
         new(Plugin.DescTreeSidebar, Plugin.DescTreeSidebar,
             "模组列表改为左侧竖排侧栏，选中的模组在其下方展开分区，右侧显示选项。重启生效。",
             "模組列表改為左側直排側欄，選中的模組在其下方展開分區，右側顯示選項。重啟生效。"),
-        new(Plugin.DescClassicBrownMenu, Plugin.DescClassicBrownMenu,
-            "模组设置页跟随游戏设置菜单的配色（PEAK 3.1 起为深蓝）。打开后保持旧版的棕色外观。重启生效。",
-            "模組設定頁跟隨遊戲設定選單的配色（PEAK 3.1 起為深藍）。開啟後保持舊版的棕色外觀。重新啟動生效。"),
+        new(Plugin.DescColourTheme, Plugin.DescColourTheme,
+            "模组设置页的配色主题。蓝色跟随游戏的设置菜单；紫色是夜间风格；夜里自动紫色在装了 TimeTheme 时夜里切到紫色（只读它的昼夜状态）。即时生效。",
+            "模組設定頁的配色主題。藍色跟隨遊戲的設定選單；紫色是夜間風格；夜裡自動紫色在裝了 TimeTheme 時夜裡切到紫色（只讀它的晝夜狀態）。即時生效。"),
         new(Plugin.DescDescriptionPanel, Plugin.DescDescriptionPanel,
             "右上方面板显示悬停选项的说明、默认值与取值范围 / 可选项。需要树形侧栏。重启生效。",
             "右上方板面顯示懸停選項的說明、預設值與取值範圍 / 可選項。需要樹形側欄。重啟生效。"),
@@ -186,14 +203,8 @@ internal static class Loc
             "将 ModConfig 自带界面（搜索、默认、清空、筛选项……）与本模组按钮 / 提示本地化。文字取自 config\\ModConfigEnhance\\language\\ 的语言文件，在模组列表上方的语言行选择。重启生效。",
             "將 ModConfig 自帶介面（搜尋、預設、清除、篩選項……）與本模組按鈕 / 提示本地化。文字取自 config\\ModConfigEnhance\\language\\ 的語言檔案，在模組列表上方的語言行選擇。重啟生效。"),
         new(Plugin.DescHideLocalizationButtons, Plugin.DescHideLocalizationButtons,
-            "收起模组列表上方的导出与 XUnity 两排按钮，只留语言下拉 + 刷新；列表上移，「导出」列同步隐藏，勾选状态保留。即时生效。",
-            "收起模組列表上方的導出與 XUnity 兩排按鈕，只留語言下拉 + 重新整理；列表上移，「導出」欄同步隱藏，勾選狀態保留。即時生效。"),
-        new(Plugin.DescSwitchXUnity, Plugin.DescSwitchXUnity,
-            "选中语言文件时同步切换 XUnity 的语言：词典目录变为 Translation\\<码>\\Text\\，译文镜像为其中的 ModConfigEnhance_<码>.txt 并重载词典，AutoTranslatorConfig.ini 的 Language= 同步改写。未翻到的文本显示原文。关闭则完全不碰 XUnity。",
-            "選中語言檔案時同步切換 XUnity 的語言：詞典目錄變為 Translation\\<碼>\\Text\\，譯文鏡像為其中的 ModConfigEnhance_<碼>.txt 並重載詞典，AutoTranslatorConfig.ini 的 Language= 同步改寫。未翻到的文字顯示原文。關閉則完全不碰 XUnity。"),
-        new(Plugin.DescTameXUnity, Plugin.DescTameXUnity,
-            "默认开启。装有 XUnity AutoTranslator 时，每次启动清空 AutoTranslatorConfig.ini 的 Endpoint / FallbackEndpoint，让 XUnity 只做词典翻译（它出厂默认的 GoogleTranslateV2 会机翻全部界面文本），并清空各语言目录下的机翻缓存 _AutoGeneratedTranslations*.txt（原文件备份为 .bak，只留第一次）。依赖在线机翻请关掉本项。",
-            "預設開啟。裝有 XUnity AutoTranslator 時，每次啟動清空 AutoTranslatorConfig.ini 的 Endpoint / FallbackEndpoint，讓 XUnity 只做詞典翻譯（它出廠預設的 GoogleTranslateV2 會機翻全部介面文字），並清空各語言目錄下的機翻快取 _AutoGeneratedTranslations*.txt（原檔案備份為 .bak，只留第一次）。依賴線上機翻請關掉本項。"),
+            "收起模组列表上方的导出与翻译工具两排按钮，只留语言下拉 + 刷新；列表上移，「导出」列同步隐藏，勾选状态保留。即时生效。",
+            "收起模組列表上方的導出與翻譯工具兩排按鈕，只留語言下拉 + 重新整理；列表上移，「導出」欄同步隱藏，勾選狀態保留。即時生效。"),
     };
 
     // ── 取词 ──────────────────────────────────────────────────────
@@ -295,6 +306,10 @@ internal static class Loc
         /// <summary>键 → 译文；MCE_ 键已去前缀并大写，其余键原样。</summary>
         internal readonly Dictionary<string, string> Entries = new Dictionary<string, string>(StringComparer.Ordinal);
         internal readonly List<int> BadLines = new List<int>();
+        /// <summary><c>r:</c> 正则规则，按文件内与组内先后排列；匹配时后写的优先。</summary>
+        internal readonly List<RegexRule> Regexes = new List<RegexRule>();
+        /// <summary>写坏的正则（「文件名 第 n 行：原因」），跳过不用，在应用结果里提示。</summary>
+        internal readonly List<string> RegexErrors = new List<string>();
 
         internal string Name => System.IO.Path.GetFileName(Path);
         internal int FileCount => Paths.Count > 0 ? Paths.Count : 1;
@@ -491,9 +506,19 @@ internal static class Loc
                 continue; // 等号右边留空 = 未翻，回落
             }
 
-            if (key.StartsWith(KeyPrefix, StringComparison.OrdinalIgnoreCase))
+            if (IsRegexKey(key))
             {
-                key = key.Substring(KeyPrefix.Length).ToUpperInvariant();
+                // r: 行按 XUnity 词典的转义重新读（两个反斜杠 → 一个等），从 XUnity 词典搬来的规则意思不变
+                string rawKey = UnescapeXUnity(line.Substring(0, eq)).Trim(), rawValue = UnescapeXUnity(line.Substring(eq + 1));
+                RegexRule? rule = TryCompileRegex(rawKey, rawValue, Path.GetFileName(file), lineNo, out string regexError);
+                if (rule != null) result.Regexes.Add(rule);
+                else result.RegexErrors.Add(F("{0} line {1}: {2}", "{0} 第 {1} 行：{2}", "{0} 第 {1} 行：{2}", Path.GetFileName(file), lineNo, regexError));
+                continue;
+            }
+
+            if (TryStripTermPrefix(key, out string termId))
+            {
+                key = termId;
             }
 
             bool incomingEffective = IsEffectiveTranslation(key, value, result.Code);
@@ -548,9 +573,21 @@ internal static class Loc
         };
         merged.Paths.AddRange(group.Paths);
         Dictionary<string, string> sources = new Dictionary<string, string>(StringComparer.Ordinal);
+        // 内置三语先铺内置译文，文件里的有效译文再覆盖：旧版写出的语言文件缺新词条时不再回落英文。
+        string builtInCode = NormalizeLanguageCode(merged.Code);
+        if (builtInCode == "en-us" || builtInCode == "zh-cn" || builtInCode == "zh-tw")
+        {
+            foreach (Term term in Terms)
+            {
+                merged.Entries[term.Key] = PickTerm(term, builtInCode);
+            }
+        }
+
         foreach (string path in group.Paths)
         {
             LanguageFile file = Parse(path);
+            merged.Regexes.AddRange(file.Regexes);
+            merged.RegexErrors.AddRange(file.RegexErrors);
             if (file.BadLines.Count > 0)
             {
                 throw new InvalidDataException(Format("NOTICE_LANG_BAD_LINES", Path.GetFileName(path) + ": " + JoinLines(file.BadLines)));
@@ -558,6 +595,11 @@ internal static class Loc
 
             foreach (KeyValuePair<string, string> pair in file.Entries)
             {
+                if (RetiredTerm(pair.Key))
+                {
+                    continue; // 已删除 / 改了含义的旧词条：旧译文说的是 XUnity 联动，以内置为准
+                }
+
                 bool incomingEffective = IsEffectiveTranslation(pair.Key, pair.Value, merged.Code);
                 if (merged.Entries.TryGetValue(pair.Key, out string? oldValue))
                 {
@@ -568,7 +610,7 @@ internal static class Loc
                         continue;
                     }
 
-                    if (incomingEffective && oldEffective && !string.Equals(oldValue, pair.Value, StringComparison.Ordinal))
+                    if (incomingEffective && oldEffective && sources.ContainsKey(pair.Key) && !string.Equals(oldValue, pair.Value, StringComparison.Ordinal))
                     {
                         Plugin.Log.LogWarning($"[语言] {group.Key} 键冲突「{pair.Key}」：{sources[pair.Key]} → {Path.GetFileName(path)}，采用后者。");
                     }
@@ -703,44 +745,20 @@ internal static class Loc
         return result;
     }
 
-    internal static int FindUnescapedEquals(string line)
-    {
-        for (int i = 0; i < line.Length; i++)
-        {
-            if (line[i] == '=' && (i == 0 || line[i - 1] != '\\'))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    internal static string Escape(string text)
-    {
-        return text.Replace("\r", "").Replace("\n", "\\n").Replace("=", "\\=");
-    }
-
-    internal static string Unescape(string text)
-    {
-        return text.Replace("\\=", "=").Replace("\\n", "\n");
-    }
-
-    // ── 应用 ──────────────────────────────────────────────────────
+    // FindUnescapedEquals / Escape / Unescape 在 Loc.Escaping.cs
 
     /// <summary>说明面板要显示的结果：正常一行，出错用警告色。Parts 非空时走结构化富文本（分段上色）。</summary>
     internal sealed class ApplyResult
     {
         internal string Message = "";
         internal bool Warning;
-        internal string Mirror = "";
         internal bool Success;
         internal List<(string Text, ModConfigDescriptionPanel.NoticeRole Role)>? Parts;
     }
 
     /// <summary>
     /// 按 <paramref name="selection"/>（空 = 跟随游戏语言，否则是组名「语言码[-变体]」）把词条写进语言表，
-    /// 需要时刷新全部 LocalizedText 组件并镜像给 XUnity。
+    /// 需要时刷新全部 LocalizedText 组件；本模组负责显示的模组文字（侧栏、说明面板、设置页）随版本号重画。
     /// </summary>
     internal static ApplyResult Apply(string selection, bool notify, bool refresh)
     {
@@ -776,18 +794,15 @@ internal static class Loc
                 }
             }
 
-            result.Mirror = SyncXUnity(selection, preparedGroup, out int mirrored, out string? mirrorWarning);
             WriteReadme();
-            if (mirrored > 0)
+            if (preparedGroup != null && (preparedGroup.Regexes.Count > 0 || preparedGroup.RegexErrors.Count > 0))
             {
-                parts.Add((T($"  |  XUnityTranslate dictionary: {mirrored} entries.",
-                    $"  |  已加载 XUnityTranslate 词典 {mirrored} 条。",
-                    $"  |  已載入 XUnityTranslate 詞典 {mirrored} 條。"), ModConfigDescriptionPanel.NoticeRole.Body));
-            }
-
-            if (mirrorWarning != null)
-            {
-                parts.Add(("\n" + mirrorWarning, ModConfigDescriptionPanel.NoticeRole.Warning));
+                parts.Add((F("  |  Regex rules: {0}", "  |  正则规则 {0} 条", "  |  正則規則 {0} 條", preparedGroup.Regexes.Count), ModConfigDescriptionPanel.NoticeRole.Body));
+                for (int i = 0; i < preparedGroup.RegexErrors.Count && i < 5; i++)
+                {
+                    result.Warning = true;
+                    parts.Add(("\n" + F("Regex rule skipped: {0}", "正则规则已跳过：{0}", "正則規則已略過：{0}", preparedGroup.RegexErrors[i]), ModConfigDescriptionPanel.NoticeRole.Warning));
+                }
             }
 
             if (preparedGroup != null && preparedGroup.Paths.Count > 0)
@@ -822,6 +837,11 @@ internal static class Loc
         }
         finally
         {
+            if (appliedSuccessfully)
+            {
+                InvalidateEditingTranslations(); // 侧栏、说明面板、设置页的模组文字按新语言组重画
+            }
+
             if (refresh && appliedSuccessfully)
             {
                 _refreshing = true;
@@ -848,7 +868,7 @@ internal static class Loc
             }
         }
 
-        Plugin.Log.LogInfo($"[语言] {result.Message.Replace("\n", " | ")}{(result.Mirror.Length > 0 ? " | " + result.Mirror : "")}");
+        Plugin.Log.LogInfo($"[语言] {result.Message.Replace("\n", " | ")}");
         return result;
     }
 
@@ -984,226 +1004,6 @@ internal static class Loc
         return sb.ToString();
     }
 
-    // ── 让 XUnity 跟着切语言 ──────────────────────────────────────
-
-    /// <summary>
-    /// 选中语言文件（或跟随游戏时游戏语言变了）后：把 XUnity 的目标语言切到该文件的语言码，词典目录随之变成
-    /// <c>Translation\&lt;码&gt;\Text\</c>；文件里非 MCE_ 的行写成那个目录下的 <c>ModConfigEnhance_&lt;码&gt;.txt</c>（其他语言目录里的旧镜像先删）；
-    /// 重载词典——词典里没有的文本 XUnity 会还原成原文；再把 Language= 写回 AutoTranslatorConfig.ini 让下次启动一致。
-    /// 返回给用户看的一行说明（空 = 没什么可说）。
-    /// </summary>
-    internal static string SyncXUnity(string selection)
-    {
-        return SyncXUnity(selection, null, out _, out _);
-    }
-
-    /// <summary>返回给日志的详细消息；<paramref name="mirrored"/> = 交给 XUnity 的词条数（0 = 没写镜像），<paramref name="mirrorWarning"/> = 需要在说明面板用警告色提示的异常（不能运行时切换等）。</summary>
-    private static string SyncXUnity(string selection, LanguageFile? preparedGroup, out int mirrored, out string? mirrorWarning)
-    {
-        mirrored = 0;
-        mirrorWarning = null;
-        if (!XUnityBridge.Installed || !Plugin.SwitchXUnity.Value)
-        {
-            return "";
-        }
-
-        string stem = string.IsNullOrEmpty(selection) ? FollowStem() : NormalizeSelection(selection);
-        try
-        {
-            // 在切 XUnity、删除旧镜像之前完成整组读取与校验。
-            LanguageFile? sourceGroup = preparedGroup
-                ?? (string.IsNullOrEmpty(selection) ? ParseOptionalGroupByCode(stem) : ParseOptionalGroup(stem));
-            int count = 0;
-            string? mirrorContent = null;
-            if (sourceGroup != null)
-            {
-                StringBuilder mirror = new StringBuilder();
-                mirror.Append("// Generated by ModConfig Enhance from language group ").Append(sourceGroup.Key).Append(" (").Append(sourceGroup.FileCount).Append(" files) - do not edit.\n");
-                foreach (KeyValuePair<string, string> pair in sourceGroup.Entries)
-                {
-                    if (IsTermKey(pair.Key) || pair.Key == pair.Value)
-                    {
-                        continue;
-                    }
-
-                    mirror.Append(Escape(pair.Key)).Append('=').Append(Escape(pair.Value)).Append('\n');
-                    count++;
-                }
-
-                if (count > 0)
-                {
-                    mirrorContent = mirror.ToString();
-                }
-            }
-
-            string? root = XUnityBridge.TranslationRoot;
-            string code = ResolveXUnityCode(stem, root);
-            bool switched = false;
-            string? current = XUnityBridge.TargetLanguage;
-            if (!string.Equals(current, code, StringComparison.OrdinalIgnoreCase))
-            {
-                if (!XUnityBridge.CanSetLanguage)
-                {
-                    Plugin.Log.LogWarning("[语言] XUnity 结构对不上，不能在运行时切它的目标语言；只改本模组界面。");
-                    mirrorWarning = Format("NOTICE_XUNITY_NO_SWITCH", current ?? "?");
-                    return "";
-                }
-
-                switched = XUnityBridge.SetLanguage(code);
-                if (switched)
-                {
-                    WriteIniLanguage(code);
-                }
-            }
-
-            string? dir = XUnityBridge.TranslationsPath;
-            if (string.IsNullOrEmpty(dir))
-            {
-                return "";
-            }
-
-            Directory.CreateDirectory(dir);
-            string? mirrorPath = null;
-            if (mirrorContent != null)
-            {
-                mirrorPath = Path.Combine(dir!, MirrorPrefix + code + ".txt");
-                string temporary = mirrorPath + ".tmp";
-                try
-                {
-                    File.WriteAllText(temporary, mirrorContent, new UTF8Encoding(false));
-                    File.Copy(temporary, mirrorPath, true);
-                }
-                finally
-                {
-                    if (File.Exists(temporary))
-                    {
-                        File.Delete(temporary);
-                    }
-                }
-            }
-
-            // 新镜像落盘成功后才清理其它语言的旧镜像；当前刚写好的文件明确保留。
-            DeleteAllMirrors(root, dir!, mirrorPath);
-
-            mirrored = count;
-            XUnityBridge.ReloadTranslations();
-            return Format(switched ? "NOTICE_XUNITY_SWITCHED" : "NOTICE_XUNITY_SYNCED", code, count);
-        }
-        catch (Exception ex)
-        {
-            Plugin.Log.LogWarning($"[语言] 同步 XUnity 失败: {ex.Message}");
-            return "";
-        }
-    }
-
-    /// <summary>
-    /// 文件名 → XUnity 语言码：Translation\ 下已有同名目录用同名；有「同一语言」的目录（zh-cn ↔ zh）沿用它，不另起目录；
-    /// 否则按 XUnity 圈子的惯例取主语言子标签（en-us → en、de-de → de），繁中例外用 zh-TW。
-    /// </summary>
-    internal static string ResolveXUnityCode(string stem, string? root)
-    {
-        stem = stem.Trim().ToLowerInvariant().Replace('_', '-');
-        string fallback = stem.StartsWith("zh-tw") || stem.StartsWith("zh-hk") || stem.StartsWith("zh-hant") ? "zh-TW" : stem.Split('-')[0];
-        if (string.IsNullOrEmpty(root) || !Directory.Exists(root))
-        {
-            return fallback;
-        }
-
-        string? sameLanguage = null;
-        foreach (string dir in Directory.GetDirectories(root))
-        {
-            string name = Path.GetFileName(dir);
-            if (string.Equals(name, stem, StringComparison.OrdinalIgnoreCase))
-            {
-                return name;
-            }
-
-            if (sameLanguage == null && SameLanguage(stem, name))
-            {
-                sameLanguage = name;
-            }
-        }
-
-        return sameLanguage ?? fallback;
-    }
-
-    private static void DeleteAllMirrors(string? root, string currentDir, string? keepPath)
-    {
-        IEnumerable<string> dirs = !string.IsNullOrEmpty(root) && Directory.Exists(root)
-            ? Directory.GetDirectories(root!)
-            : new[] { currentDir };
-        foreach (string langDir in dirs)
-        {
-            string textDir = Path.Combine(langDir, "Text");
-            foreach (string probe in new[] { textDir, langDir, currentDir })
-            {
-                if (!Directory.Exists(probe))
-                {
-                    continue;
-                }
-
-                foreach (string old in Directory.GetFiles(probe, MirrorPrefix + "*.txt"))
-                {
-                    if (!string.IsNullOrEmpty(keepPath) && string.Equals(Path.GetFullPath(old), Path.GetFullPath(keepPath), StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    File.Delete(old);
-                }
-            }
-        }
-    }
-
-    /// <summary>把 Language= 写回 AutoTranslatorConfig.ini（只改这一行，其余原样），下次启动 XUnity 直接用新语言。</summary>
-    private static void WriteIniLanguage(string code)
-    {
-        try
-        {
-            string ini = Path.Combine(Paths.ConfigPath, "AutoTranslatorConfig.ini");
-            if (!File.Exists(ini))
-            {
-                return;
-            }
-
-            byte[] bytes = File.ReadAllBytes(ini);
-            bool bom = bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF;
-            string text = Encoding.UTF8.GetString(bytes, bom ? 3 : 0, bytes.Length - (bom ? 3 : 0));
-            string newline = text.Contains("\r\n") ? "\r\n" : "\n";
-            string[] lines = text.Split('\n');
-            bool inGeneral = false;
-            bool done = false;
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i].TrimEnd('\r');
-                if (line.StartsWith("[", StringComparison.Ordinal))
-                {
-                    inGeneral = line.Trim().Equals("[General]", StringComparison.OrdinalIgnoreCase);
-                    continue;
-                }
-
-                if (inGeneral && line.StartsWith("Language=", StringComparison.Ordinal))
-                {
-                    lines[i] = "Language=" + code + (lines[i].EndsWith("\r") ? "\r" : "");
-                    done = true;
-                    break;
-                }
-            }
-
-            if (!done)
-            {
-                return;
-            }
-
-            File.WriteAllText(ini, string.Join("\n", lines), new UTF8Encoding(bom));
-            Plugin.Log.LogInfo($"[语言] AutoTranslatorConfig.ini 的 Language 已改为 {code}（下次启动生效；本次已在运行时切换）。");
-        }
-        catch (Exception ex)
-        {
-            Plugin.Log.LogWarning($"[语言] 写 AutoTranslatorConfig.ini 失败: {ex.Message}");
-        }
-    }
-
     private static bool IsTermKey(string key)
     {
         foreach (Term term in Terms)
@@ -1279,31 +1079,6 @@ internal static class Loc
         };
     }
 
-    /// <summary>zh/en 裸码先归一到 zh-cn/en-us；简体与繁体绝不互认。</summary>
-    internal static bool SameLanguage(string fileStem, string xunityLanguage)
-    {
-        string a = NormalizeSelection(fileStem);
-        string b = NormalizeLanguageCode(xunityLanguage);
-        if (a == b)
-        {
-            return true;
-        }
-
-        string pa = a.Split('-')[0];
-        string pb = b.Split('-')[0];
-        if (pa != pb)
-        {
-            return false;
-        }
-
-        if (pa == "zh")
-        {
-            return false;
-        }
-
-        return !a.Contains("-") || !b.Contains("-");
-    }
-
     // ── 内建文件 ──────────────────────────────────────────────────
 
     /// <summary>首启写 en-us / zh-cn / zh-tw（只建不覆），说明文件每次重写。</summary>
@@ -1313,6 +1088,7 @@ internal static class Loc
         {
             Directory.CreateDirectory(LanguageDirectory);
             Directory.CreateDirectory(ExportDirectory);
+            LegacyXUnityMirrors.MoveAway();
             WriteIfMissing("en-us", "English", t => t.English, t => t.English);
             WriteIfMissing("zh-cn", "简体中文", t => t.SimplifiedChinese, t => t.SimplifiedChinese);
             WriteIfMissing("zh-tw", "繁體中文", t => t.TraditionalChinese, t => t.TraditionalChinese);
@@ -1335,13 +1111,13 @@ internal static class Loc
         File.WriteAllText(path, BuildFile(display, pick, pickCfg), new UTF8Encoding(false));
     }
 
-    private static string BuildReadme() => LanguageReadme.For(UiLanguage).Replace("{VERSION}", Plugin.PluginVersion);
+    private static string BuildReadme() => LanguageReadme.For(UiLanguage).Replace("{VERSION}", Plugin.DisplayVersion);
 
     private static string BuildFile(string display, Func<Term, string> pick, Func<Term, string> pickCfg)
     {
         StringBuilder sb = new StringBuilder();
         sb.Append("// display: ").Append(display).Append('\n');
-        sb.Append("// ModConfig Enhance ").Append(Plugin.PluginVersion).Append(" - built-in language file. Edit freely; it is never overwritten. Reset by deleting it.\n");
+        sb.Append("// ModConfig Enhance ").Append(Plugin.DisplayVersion).Append(" - built-in language file. Edit freely; it is never overwritten. Reset by deleting it.\n");
         sb.Append("// See ..\\").Append(ReadmeFile).Append(" for the format and how to make a new language.\n");
 
         sb.Append('\n');
@@ -1352,7 +1128,7 @@ internal static class Loc
         }
 
         sb.Append('\n');
-        sb.Append("// ---- Settings of this mod (English original=translation; mirrored into XUnity) ----\n");
+        sb.Append("// ---- Settings of this mod (English original=translation) ----\n");
         foreach (Term term in ConfigTerms)
         {
             sb.Append(Escape(term.Key)).Append('=').Append(Escape(pickCfg(term))).Append('\n');
