@@ -2,7 +2,7 @@
   "name": "ModConfigEnhance",
   "version_number": "1.1.0",
   "website_url": "https://github.com/AiAe-156/Peak-ModConfigEnhance",
-  "description": "ModConfig settings page enhancements: tree sidebar, description panel, translation tools, language files.",
+  "description": "ModConfig settings page upgrades: tree sidebar, info panel, built-in translation. Plus a Mod overview: mod list with custom groups, one-page keybindings with controller combos, and a log viewer. Fully offline.",
   "dependencies": [
     "BepInEx-BepInExPack_PEAK-5.4.2403",
     "PEAKModding-PEAKLib_UI-1.7.2",
