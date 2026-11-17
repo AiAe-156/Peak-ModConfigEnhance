@@ -40,7 +40,7 @@
   - 进入右栏时焦点落在选项的值控件上，不再落在「默认」按钮上（原先按一下 A 就把值重置了）。
   - 离开模组设置页需要快速连按两次 B，第一次按下时屏幕底部有提示；键鼠不受影响。
   - 上限极大的滑条（例如上限是浮点数最大值）按有效区间计算步长，步长取整。
-  - 焦点框外加一圈深色描边，浅色控件上也看得清；鼠标点击不再画焦点框。滑条选中时滑块外有光环，调值时变橙色。
+  - 焦点框外加一圈深色描边，浅色控件上也看得清。用手柄时框跟着焦点走；用键鼠时框跟着鼠标悬停的控件走，移到空白处就消失。框每移到一个新控件响一声（与列表逐行出现同一声）；本身就有选中音效的按钮保留原音效、不再叠加，概览页顶部的大页签用与按钮相同的选中音效；拖动和打字时不响。滑条选中时滑块外有光环，调值时变橙色。
   - 在左栏上下移动时，说明面板预览焦点所在模组的介绍，不切换右侧显示的模组。
 - 翻译改由本模组自己完成，不再依赖 XUnity AutoTranslator：模组名称、分区、选项名、说明和下拉选项都按 `language\` 里的语言文件直接显示（整句译文优先，其次正则规则，都没有则显示原文）。依赖列表里移除了 XUnity。
   - 「显示原文 / 显示译文」「重载翻译」「补漏翻」不再需要 XUnity，始终可用。「显示原文」只切换本模组负责显示的模组文字，本模组自己的界面文字保持所选语言。
@@ -96,7 +96,7 @@
   - Entering the right panel focuses the option's value control instead of its Default button (one press of A used to reset the value).
   - Leaving the mod settings page takes two quick presses of B; the first press shows a hint at the bottom of the screen. Keyboard and mouse are unaffected.
   - Sliders with a huge maximum (such as the largest float value) use an effective range for their step, and steps are round numbers.
-  - The focus frame has a dark outline so it shows on light controls; mouse clicks no longer draw it. A selected slider shows a ring around its knob, orange while adjusting.
+  - The focus frame has a dark outline so it shows on light controls. With a controller it follows the focus; with keyboard and mouse it follows the control under the mouse and disappears over empty space. Each time it moves to a new control it plays a short click (the same sound as list rows appearing); buttons that already have their own select sound keep only that one, and the big tabs at the top of the overview page use the same select sound as buttons. No sound while dragging or typing. A selected slider shows a ring around its knob, orange while adjusting.
   - Moving through the left column previews the focused mod's summary in the description panel without switching the options shown on the right.
 - Changed: translation is now done by this mod itself, without XUnity AutoTranslator: mod names, sections, option names, descriptions and dropdown choices are shown straight from the language files in `language\` (exact line first, then regex rules, otherwise the original). XUnity is no longer in the dependency list.
   - **Show original / Show translated**, **Reload texts** and **Untranslated** no longer need XUnity and are always available. Show original only switches the mod texts this mod displays; this mod's own UI keeps the selected language.

@@ -1578,6 +1578,116 @@ internal static class GamepadSupport
         }
     }
 
+    /// <summary>
+    /// 实测修正（2026-11-16，用户）：焦点框每移到一个新控件响一声（逐行载入那一声的音色），键鼠、手柄都响。
+    /// 同一个控件不重响；拖动中（键鼠态按住左键）、输入框打字中、手柄录组合键锁定中都不响。
+    /// 2026-11-17（用户）：去掉两声之间的最小间隔；音量单独调大，见 <see cref="SidebarCascade.PlayFocusSound"/>。
+    /// </summary>
+    internal static class FocusMoveSound
+    {
+        private static GameObject? _last;
+        /// <summary>碰到过的缎带钮音效组件（RibbonHoverSound 从这里抄 sfxHover）。</summary>
+        internal static NicksButtonSFX? RibbonSource;
+
+        internal static void Moved(GameObject target)
+        {
+            if (target == _last) return;
+            _last = target;
+            if (Suppressed()) return;
+            try
+            {
+                // 实测修正（2026-11-17，用户：图标钮、缎带钮本来就有选中音效，重复了）：游戏的缎带钮模板带 NicksButtonSFX，
+                // 悬停（OnPointerEnter）和手柄选中（OnSelect）都自己响 sfxHover。这类控件不再加我们这一声。
+                // 概览页顶部大页签挂了 RibbonHoverSound，它会给页签补一个同款 NicksButtonSFX，这里同样跳过。
+                NicksButtonSFX? own = OwnSound(target);
+                if (own != null)
+                {
+                    if (RibbonSource == null) RibbonSource = own;
+                    return;
+                }
+
+                SidebarCascade.PlayFocusSound();
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogDebug($"[焦点音效] 播放失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>控件自己（或它所在的缎带钮）带的游戏悬停音效；没有返回 null。</summary>
+        private static NicksButtonSFX? OwnSound(GameObject target)
+        {
+            // 只看控件自己和它所属的缎带钮；不往子孙里找（整行被选中时，行里的小按钮不算这一行自带音效）
+            NicksButtonSFX? sfx = target.GetComponent<NicksButtonSFX>();
+            if (sfx == null)
+            {
+                PeakMenuButton? ribbon = target.GetComponentInParent<PeakMenuButton>();
+                if (ribbon != null) sfx = ribbon.GetComponentInChildren<NicksButtonSFX>(false);
+            }
+
+            return sfx != null && sfx.isActiveAndEnabled && sfx.sfxHover != null ? sfx : null;
+        }
+
+        private static bool Suppressed()
+        {
+            if (GamepadLock.Active) return true;
+            if (!IsGamepad && Mouse.current != null && Mouse.current.leftButton.isPressed) return true; // 拖动 / 按住
+            EventSystem? system = EventSystem.current;
+            GameObject? selected = system != null ? system.currentSelectedGameObject : null;
+            TMP_InputField? field = selected != null ? selected.GetComponent<TMP_InputField>() : null;
+            return field != null && field.isFocused;
+        }
+    }
+
+    /// <summary>
+    /// 实测修正（2026-11-17，用户：概览页顶部大页签的选中音效要跟缎带钮一样）：给页签补一个游戏自己的 NicksButtonSFX，
+    /// sfxHover 抄自缎带钮，悬停与手柄选中由游戏代码照缎带钮的方式播（上一版自己调 PlaySFX 没响）。
+    /// 只换选中音效，不加点击音效（sfxClick 留空，PlaySFX 遇空直接返回）。
+    /// 页签可能比缎带钮先建：找不到来源就每 0.5 秒再找一次，补上后本组件自毁。
+    /// </summary>
+    internal sealed class RibbonHoverSound : MonoBehaviour
+    {
+        private float _nextSearch;
+
+        private void Update()
+        {
+            NicksButtonSFX? source = FocusMoveSound.RibbonSource;
+            if (source == null || source.sfxHover == null)
+            {
+                if (Time.unscaledTime < _nextSearch) return;
+                _nextSearch = Time.unscaledTime + 0.5f;
+                source = null;
+                NicksButtonSFX? any = null;
+                foreach (NicksButtonSFX candidate in Object.FindObjectsByType<NicksButtonSFX>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    if (candidate.sfxHover == null) continue;
+                    if (candidate.GetComponentInParent<PeakMenuButton>(true) != null)
+                    {
+                        source = candidate;
+                        break;
+                    }
+
+                    any ??= candidate; // 没有缎带钮就用游戏菜单按钮的（缎带钮模板本来就取自游戏菜单按钮）
+                }
+
+                source ??= any;
+                if (source == null) return;
+                FocusMoveSound.RibbonSource = source;
+            }
+
+            Button? button = GetComponent<Button>();
+            if (button != null && GetComponent<NicksButtonSFX>() == null)
+            {
+                NicksButtonSFX sfx = gameObject.AddComponent<NicksButtonSFX>();
+                sfx.button = button; // Start 里给 onClick 挂 OnClick，必须非空
+                sfx.sfxHover = source.sfxHover;
+                sfx.sfxClick = null!;
+            }
+
+            Destroy(this);
+        }
+    }
+
     // ── 焦点框 ────────────────────────────────────────────────────
 
     /// <summary>
@@ -1585,7 +1695,7 @@ internal static class GamepadSupport
     /// 行自己的底图盖住中心、只露一圈描边；选中才激活。米白在 TimeTheme 表里，夜里自动变紫。
     /// <see cref="SetEngaged"/> 给滑条调值态用：焦点框换亮橙，提示「正在调值」。
     /// </summary>
-    internal sealed class FocusHighlight : MonoBehaviour, ISelectHandler, IDeselectHandler
+    internal sealed class FocusHighlight : MonoBehaviour, IDeselectHandler, IPointerEnterHandler, IPointerExitHandler
     {
         private const float Outset = 2f;
         private static readonly Color EngagedColor = new Color(1f, 0.72f, 0.28f);
@@ -1594,79 +1704,128 @@ internal static class GamepadSupport
         private bool _engaged;
 
         /// <summary>
-        /// 1.1.0 实测修正（用户 2026-11-16：键鼠打开日志窗口 / 分组管理后手柄焦点框一直在、消不掉）：原来只在被选中那一刻看输入设备，
-        /// 之后切键鼠不收、切手柄也不补；而弹窗打开时（PublicationNavigation、下拉层等）会直接选中第一个控件。
-        /// 现在记下当前被选中的那一个，每帧（<see cref="InputHandlerUpdatePostfix"/>）按「最后输入设备」重算：
-        /// 键鼠态一律不画，手柄真的有输入时才画；切回键鼠立即收起。
+        /// 显示规则（实测修正 2026-11-16，用户：键鼠下框要跟着鼠标走；框每移到新控件响一声）：
+        ///   · 手柄态：框画在 EventSystem 当前选中的控件上（每帧直接看选中对象，不靠 OnSelect——弹窗先选中、下一帧才挂框也不会漏）。
+        ///   · 键鼠态：框画在鼠标悬停的控件上（嵌套时取最深的那个，如行里的格子而不是整行）；移到空白处框消失。
+        ///     控件不可交互时不画。
+        /// 全场同一时刻只有一个框（<see cref="_shown"/>）；每帧由 <see cref="Sync"/> 统一决定，组件自己不直接显示。
+        /// 只有挂了本组件的控件（MCE 自己的页面：概览、快捷键页、模组设置页、日志窗、分组管理、各种下拉）才参与。
         /// </summary>
-        private static FocusHighlight? _current;
+        private static FocusHighlight? _shown;
+        private static readonly List<FocusHighlight> Hovered = new List<FocusHighlight>();
+        private static GameObject? _probed;
+        private static FocusHighlight? _selectedCache;
 
-        public void OnSelect(BaseEventData eventData)
+        public void OnPointerEnter(PointerEventData eventData)
         {
-            _current = this;
-            // 1.1.0：鼠标点击选中不画焦点框（概览行内格子现在也挂了焦点框，鼠标行为要保持原样）；之后手柄一动由 Sync 补上。
-            SetVisible(eventData is not PointerEventData && IsGamepad);
+            Hovered.Remove(this);
+            Hovered.Add(this);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            // 指针移进子控件时父级也会收到 exit / enter；Unity 只在真正离开本对象（含子孙）时才发 exit，这里直接移除即可。
+            Hovered.Remove(this);
         }
 
         public void OnDeselect(BaseEventData eventData)
         {
-            if (_current == this) _current = null;
-            SetVisible(false);
             _engaged = false;
         }
 
         private void OnDisable()
         {
-            if (_current == this) _current = null;
+            Hovered.Remove(this);
+            if (_shown == this) _shown = null;
+            if (_selectedCache == this) _selectedCache = null;
             SetVisible(false);
             _engaged = false;
         }
-
-        /// <summary>每帧调用一次：当前选中项的焦点框只在手柄态显示。只看一个对象，不遍历。</summary>
-        internal static void Sync()
-        {
-            // 实测修正（2026-11-16 二次）：不再只靠 OnSelect 记下「当前」——弹窗先选中控件、下一帧才给它挂焦点框时，
-            // OnSelect 早就错过了，焦点框永远不出来。现在每帧直接看 EventSystem 当前选中的对象。
-            EventSystem? system = EventSystem.current;
-            GameObject? selected = system == null ? null : system.currentSelectedGameObject;
-
-            FocusHighlight? current = _current;
-            if (current is not null && (current == null || current.gameObject != selected))
-            {
-                if (current != null) current.SetVisible(false);
-                _current = null;
-                current = null;
-            }
-
-            if (selected == null)
-            {
-                _probed = null;
-                return;
-            }
-
-            if (current is null)
-            {
-                if (_probed == selected) return; // 这个对象已经查过、没有焦点框
-                current = selected.GetComponent<FocusHighlight>();
-                if (current == null)
-                {
-                    _probed = selected;
-                    return;
-                }
-
-                _current = current;
-            }
-
-            _probed = null;
-            current.SetVisible(IsGamepad);
-        }
-
-        private static GameObject? _probed;
 
         // 已选中的对象后来才挂上焦点框（PublicationNavigation 下一帧才 MarkSelectable）：让 Sync 重新认它。
         private void Awake()
         {
             if (_probed == gameObject) _probed = null;
+        }
+
+        /// <summary>每帧调用一次（<see cref="TrackInput"/> 末尾）：决定这一帧框画在谁身上；换了控件就响一声。</summary>
+        internal static void Sync()
+        {
+            FocusHighlight? target = IsGamepad ? SelectedHighlight() : HoveredHighlight();
+            FocusHighlight? shown = _shown;
+            if (shown is not null && shown != target)
+            {
+                if (shown != null) shown.SetVisible(false);
+                _shown = null;
+            }
+
+            if (target == null)
+            {
+                return;
+            }
+
+            target.SetVisible(true);
+            if (_shown != target)
+            {
+                _shown = target;
+                FocusMoveSound.Moved(target.gameObject);
+            }
+        }
+
+        private static FocusHighlight? SelectedHighlight()
+        {
+            EventSystem? system = EventSystem.current;
+            GameObject? selected = system == null ? null : system.currentSelectedGameObject;
+            if (selected == null)
+            {
+                _probed = null;
+                return null;
+            }
+
+            if (_selectedCache != null && _selectedCache.gameObject == selected)
+            {
+                return _selectedCache;
+            }
+
+            if (_probed == selected) return null; // 这个对象已经查过、没有焦点框
+            FocusHighlight? found = selected.GetComponent<FocusHighlight>();
+            if (found == null)
+            {
+                _probed = selected;
+                _selectedCache = null;
+                return null;
+            }
+
+            _probed = null;
+            _selectedCache = found;
+            return found;
+        }
+
+        private static FocusHighlight? HoveredHighlight()
+        {
+            FocusHighlight? best = null;
+            int bestDepth = -1;
+            for (int i = Hovered.Count - 1; i >= 0; i--)
+            {
+                FocusHighlight item = Hovered[i];
+                if (item == null || !item.isActiveAndEnabled)
+                {
+                    Hovered.RemoveAt(i);
+                    continue;
+                }
+
+                Selectable? selectable = item.GetComponent<Selectable>();
+                if (selectable != null && !selectable.IsInteractable()) continue;
+                int depth = 0;
+                for (Transform? t = item.transform; t != null; t = t.parent) depth++;
+                if (depth > bestDepth)
+                {
+                    bestDepth = depth;
+                    best = item;
+                }
+            }
+
+            return best;
         }
 
         internal void SetEngaged(bool engaged)
