@@ -8,7 +8,7 @@ PEAK · enhancements for the ModConfig (PEAKLib.ModConfig) settings page
 
 [![Version](https://img.shields.io/badge/version-1.1.0-2ea44f)](https://github.com/AiAe-156/Peak-ModConfigEnhance/blob/master/CHANGELOG.md)
 [![Game](https://img.shields.io/badge/game-PEAK-7b5cd6)](https://thunderstore.io/c/peak/)
-[![Thunderstore downloads](https://img.shields.io/thunderstore/dt/AiAe-T/ModConfigEnhance?label=Thunderstore&color=23a9ff)](https://thunderstore.io/c/peak/p/AiAe-T/ModConfigEnhance/)
+[![Thunderstore downloads](https://img.shields.io/thunderstore/dt/AiAeT/ModConfigEnhance?label=Thunderstore&color=23a9ff)](https://thunderstore.io/c/peak/p/AiAeT/ModConfigEnhance/)
 [![No network](https://img.shields.io/badge/No%20network-%E4%B8%8D%E8%81%94%E7%BD%91-0a7d5a)](#english)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/AiAe-156/Peak-ModConfigEnhance/blob/master/LICENSE.txt)
 [![GitHub](https://img.shields.io/badge/GitHub-Peak--ModConfigEnhance-181717?logo=github)](https://github.com/AiAe-156/Peak-ModConfigEnhance)
@@ -74,6 +74,39 @@ PEAK · enhancements for the ModConfig (PEAKLib.ModConfig) settings page
 ### Log window
 
 Live BepInEx, game and custom logs; filter by level (several at once) / mod / group, search, and fold repeated errors. **Run** switches to the logs of the last 3 launches; one click exports a ZIP (no config values, personal paths removed).
+<details>
+<summary>🔌 For mod authors: plug into the log window</summary>
+
+Your mod can show its own logs in this window (`ModConfigEnhance.Diagnostics.MceLogApi`, plugin GUID `com.aiae.modconfigenhance`). Four ways:
+
+- `RegisterFile(guid, id, name, absolutePath)`: show an existing log file.
+- `RegisterSnapshot(guid, id, name, callback)`: the callback returns a list of `MceLogRecord`.
+- `RegisterTextSnapshot(guid, id, name, textCallback, epochCallback)`: returns line number → text; a changed epoch means the log was cleared. Friendly to reflection.
+- `CreateChannel(guid, id, name)`: returns a channel; call `Write(record)` for each entry. The simplest way.
+
+```csharp
+[BepInDependency("com.aiae.modconfigenhance", BepInDependency.DependencyFlags.SoftDependency)]
+public class MyMod : BaseUnityPlugin
+{
+    void Awake()
+    {
+        if (Chainloader.PluginInfos.ContainsKey("com.aiae.modconfigenhance")) AttachLog();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] // keeps MCE types out of Awake
+    void AttachLog()
+    {
+        var log = MceLogApi.CreateChannel(Info.Metadata.GUID, "main", "My Mod");
+        log.Write(new MceLogRecord { Level = MceLogLevel.Info, Message = "Hello from My Mod" });
+    }
+}
+```
+
+- Callbacks run on a background thread: never call Unity from them.
+- Each source keeps at most 10,000 records.
+- The namespace and API are the same as In-Game Mod Manager's; if you connect through reflection, one code path works with both.
+
+</details>
 
 ### Keybindings
 
@@ -148,7 +181,7 @@ PEAK · ModConfig（PEAKLib.ModConfig）设置页增强
 
 [![Version](https://img.shields.io/badge/version-1.1.0-2ea44f)](https://github.com/AiAe-156/Peak-ModConfigEnhance/blob/master/CHANGELOG.md)
 [![Game](https://img.shields.io/badge/game-PEAK-7b5cd6)](https://thunderstore.io/c/peak/)
-[![Thunderstore downloads](https://img.shields.io/thunderstore/dt/AiAe-T/ModConfigEnhance?label=Thunderstore&color=23a9ff)](https://thunderstore.io/c/peak/p/AiAe-T/ModConfigEnhance/)
+[![Thunderstore downloads](https://img.shields.io/thunderstore/dt/AiAeT/ModConfigEnhance?label=Thunderstore&color=23a9ff)](https://thunderstore.io/c/peak/p/AiAeT/ModConfigEnhance/)
 [![No network](https://img.shields.io/badge/No%20network-%E4%B8%8D%E8%81%94%E7%BD%91-0a7d5a)](#中文说明)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/AiAe-156/Peak-ModConfigEnhance/blob/master/LICENSE.txt)
 [![GitHub](https://img.shields.io/badge/GitHub-Peak--ModConfigEnhance-181717?logo=github)](https://github.com/AiAe-156/Peak-ModConfigEnhance)
@@ -214,6 +247,39 @@ PEAK · ModConfig（PEAKLib.ModConfig）设置页增强
 ### 日志窗口
 
 实时查看 BepInEx 日志、游戏日志和自定义日志；按等级（可多选）/ 模组 / 分组筛选，可搜索、折叠重复报错。「查看」切到最近 3 次启动的历史日志；一键导出 ZIP（不含配置值，已去掉个人路径）。
+<details>
+<summary>🔌 给模组作者：接入日志窗口</summary>
+
+你的模组可以把自己的日志显示在这个窗口里（`ModConfigEnhance.Diagnostics.MceLogApi`，插件 GUID `com.aiae.modconfigenhance`），四种接法：
+
+- `RegisterFile(guid, id, 名称, 绝对路径)`：显示一个现成的日志文件。
+- `RegisterSnapshot(guid, id, 名称, 回调)`：回调返回 `MceLogRecord` 列表。
+- `RegisterTextSnapshot(guid, id, 名称, 文本回调, 世代回调)`：返回「行号 → 文本」；世代值变了就当作日志已清空。适合用反射接入。
+- `CreateChannel(guid, id, 名称)`：得到一个通道，每条日志调用 `Write(record)` 写入。最省事。
+
+```csharp
+[BepInDependency("com.aiae.modconfigenhance", BepInDependency.DependencyFlags.SoftDependency)]
+public class MyMod : BaseUnityPlugin
+{
+    void Awake()
+    {
+        if (Chainloader.PluginInfos.ContainsKey("com.aiae.modconfigenhance")) AttachLog();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] // 不让 MCE 的类型出现在 Awake 里
+    void AttachLog()
+    {
+        var log = MceLogApi.CreateChannel(Info.Metadata.GUID, "main", "My Mod");
+        log.Write(new MceLogRecord { Level = MceLogLevel.Info, Message = "Hello from My Mod" });
+    }
+}
+```
+
+- 回调在后台线程执行，不能调用 Unity。
+- 每个来源最多保留 10,000 条。
+- 命名空间和 API 与 In-Game Mod Manager 相同；用反射接入的话，一套代码两边都能用。
+
+</details>
 
 ### 快捷键设置
 
