@@ -776,12 +776,13 @@ internal static partial class ModConfigSidebarWidgets
         cell.anchorMax = new Vector2(0f, 1f);
         cell.pivot = new Vector2(0f, 1f);
         cell.sizeDelta = new Vector2(width, height);
-        cell.anchoredPosition = new Vector2(left, 0f);
         dropdown.SetSize(new Vector2(width, height));
-        dropdown.RectTransform.anchorMin = new Vector2(0f, 1f);
-        dropdown.RectTransform.anchorMax = new Vector2(0f, 1f);
-        dropdown.RectTransform.pivot = new Vector2(0f, 1f);
-        dropdown.RectTransform.anchoredPosition = Vector2.zero;
+        // 实测修正（2026-11-17，用户：语言下拉收起时「English」后面露出「rder」）：PeakElement.Awake 里
+        // RectTransform = GetComponent<RectTransform>()，和 cell 是同一个对象。原来先给 cell 设 left、
+        // 再把 dropdown.RectTransform.anchoredPosition 清零，left 被抹掉，排序、语言两个下拉都叠在 x=0：
+        // 后建的语言下拉压在上面，半透明底下透出排序下拉的「Load order」，语言下拉原来的位置空着。
+        // 位置只设一次，放在 SetSize 之后。
+        cell.anchoredPosition = new Vector2(left, 0f);
         dropdown.SetBackgroundColor(ModConfigTreeLayoutPatch.TabBackground)
             .SetLabelColor(SelfRowTint.Selected)
             .SetArrowColor(SelfRowTint.Selected);
@@ -802,12 +803,19 @@ internal static partial class ModConfigSidebarWidgets
                 : 0f;
             // 实测修正（2026-11-16，用户：语言下拉文字尾巴和箭头叠在一起）：箭头不一定贴右缘（模板里离右边还有一段），
             // 只按箭头宽度留空会让省略号压到箭头上。改按箭头左缘到下拉右缘的实际距离留空。
+            // 实测修正（2026-11-17）：模板里的箭头转了 180°（实测四角 x=118..88），corners[0] 落在右缘，
+            // 原写法取到 118、判成「离右边只有 10」而退回按宽度留空，文字右缘 94 仍压进箭头 88。改取四角最小 x。
             if (dropdown.Arrow != null)
             {
                 Vector3[] corners = new Vector3[4];
                 dropdown.Arrow.rectTransform.GetWorldCorners(corners);
                 RectTransform box = dropdown.RectTransform;
-                float arrowLeft = box.InverseTransformPoint(corners[0]).x;
+                float arrowLeft = float.MaxValue;
+                foreach (Vector3 corner in corners)
+                {
+                    arrowLeft = Mathf.Min(arrowLeft, box.InverseTransformPoint(corner).x);
+                }
+
                 float fromRight = box.rect.xMax - arrowLeft;
                 if (fromRight > arrowSpace && fromRight < box.rect.width * 0.6f)
                 {

@@ -551,6 +551,7 @@ internal sealed partial class OverviewPage : UIPage, IHaveParentPage
         var text = OverviewUi.Text(rect, label, 20); OverviewUi.Fill(text.rectTransform); text.margin = new Vector4(6, 0, 6, 0); text.alignment = TextAlignmentOptions.Midline;
         text.enableAutoSizing = true; text.fontSizeMax = 20; text.fontSizeMin = 12; text.overflowMode = TextOverflowModes.Overflow; text.raycastTarget = false;
         GamepadSupport.MarkSelectable(rect.gameObject, null, null); // 实测修正（2026-11-16）：RT+LB/RB 在页签间移焦点时要看得到焦点框
+        rect.gameObject.AddComponent<GamepadSupport.RibbonHoverSound>(); // 实测修正（2026-11-17）：选中响缎带钮同款音效
         return rect;
     }
     private RectTransform TabRect(PageTab tab) => tab == PageTab.Mods ? _listTab : _hotkeyTab;
